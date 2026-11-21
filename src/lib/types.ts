@@ -16,7 +16,8 @@ export interface Product {
   id: string;
   name: string;
   category: string;
-  price: number;
+  price: number; // Selling price
+  cost_price?: number; // Real purchase / buying cost
   stock: number;
   image: string;
   active: boolean;

@@ -33,6 +33,7 @@ export const InventoryPage: React.FC = () => {
   const [formName, setFormName] = useState<string>('');
   const [formCategory, setFormCategory] = useState<string>('Soft Toys');
   const [formPrice, setFormPrice] = useState<number>(499);
+  const [formCostPrice, setFormCostPrice] = useState<number>(299);
   const [formStock, setFormStock] = useState<number>(20);
   const [formImage, setFormImage] = useState<string>('');
   const [formBarcode, setFormBarcode] = useState<string>('');
@@ -84,6 +85,7 @@ export const InventoryPage: React.FC = () => {
     setFormName(p.name);
     setFormCategory(p.category);
     setFormPrice(p.price);
+    setFormCostPrice(p.cost_price ?? Math.round(p.price * 0.6));
     setFormStock(p.stock);
     setFormImage(p.image);
     setFormBarcode(p.barcode || '');
@@ -92,11 +94,12 @@ export const InventoryPage: React.FC = () => {
   const handleOpenAdd = () => {
     setEditingProduct(null);
     setFormName('');
-    setFormCategory(categories[0] || 'Soft Toys');
-    setFormPrice(299);
-    setFormStock(25);
+    setFormCategory(categories[0] || 'Squishy & Stress Toys');
+    setFormPrice(50);
+    setFormCostPrice(30);
+    setFormStock(20);
     setFormImage('https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?w=400&auto=format&fit=crop&q=80');
-    setFormBarcode(`89012340${products.length + 1}`);
+    setFormBarcode(`89020${products.length + 1}`);
     setIsAddModalOpen(true);
   };
 
@@ -109,6 +112,7 @@ export const InventoryPage: React.FC = () => {
           name: formName,
           category: formCategory,
           price: formPrice,
+          cost_price: formCostPrice,
           stock: formStock,
           image: formImage,
           barcode: formBarcode,
@@ -120,6 +124,7 @@ export const InventoryPage: React.FC = () => {
         name: formName,
         category: formCategory,
         price: formPrice,
+        cost_price: formCostPrice,
         stock: formStock,
         image: formImage,
         barcode: formBarcode,
@@ -129,17 +134,40 @@ export const InventoryPage: React.FC = () => {
     }
   };
 
+  const totalStockCapital = useMemo(() => {
+    return products.reduce((sum, p) => {
+      const cost = p.cost_price ?? Math.round(p.price * 0.6);
+      return sum + p.stock * cost;
+    }, 0);
+  }, [products]);
+
+  const totalStockRetail = useMemo(() => {
+    return products.reduce((sum, p) => sum + p.stock * p.price, 0);
+  }, [products]);
+
+  const totalPotentialProfit = totalStockRetail - totalStockCapital;
+
   const handleExportCSV = () => {
-    const rows = products.map((p) => ({
-      ID: p.id,
-      Name: p.name,
-      Category: p.category,
-      Price: p.price,
-      Stock: p.stock,
-      Status: p.stock > 0 ? 'In Stock' : 'Out of Stock',
-      Barcode: p.barcode || '',
-    }));
-    downloadCSV('toy_inventory', rows);
+    const rows = products.map((p) => {
+      const cost = p.cost_price ?? Math.round(p.price * 0.6);
+      const profit = p.price - cost;
+      const margin = p.price > 0 ? Math.round((profit / p.price) * 100) : 0;
+      return {
+        ID: p.id,
+        Name: p.name,
+        Category: p.category,
+        Stock: p.stock,
+        Status: p.stock > 0 ? 'In Stock' : 'Out of Stock',
+        Real_Cost: cost,
+        Selling_Price: p.price,
+        Profit_Per_Unit: profit,
+        Margin_Percent: `${margin}%`,
+        Total_Stock_Cost: p.stock * cost,
+        Total_Stock_Retail: p.stock * p.price,
+        Barcode: p.barcode || '',
+      };
+    });
+    downloadCSV('toy_inventory_with_margins', rows);
   };
 
   return (
@@ -190,6 +218,45 @@ export const InventoryPage: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* Inventory Valuation KPI Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="p-3.5 rounded-2xl bg-card border border-border">
+              <span className="text-[11px] font-black uppercase tracking-wider text-muted-foreground block mb-1">
+                Total Buying Capital (Stock Cost)
+              </span>
+              <div className="text-xl sm:text-2xl font-black text-foreground">
+                {formatCurrency(totalStockCapital)}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                Total money invested in {products.reduce((sum, p) => sum + p.stock, 0)} units
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-card border border-border">
+              <span className="text-[11px] font-black uppercase tracking-wider text-muted-foreground block mb-1">
+                Total Retail Value (At Selling Price)
+              </span>
+              <div className="text-xl sm:text-2xl font-black text-foreground">
+                {formatCurrency(totalStockRetail)}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                Expected revenue if all stock sold
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-card border border-border">
+              <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400 block mb-1">
+                Potential Gross Profit
+              </span>
+              <div className="text-xl sm:text-2xl font-black text-emerald-400">
+                +{formatCurrency(totalPotentialProfit)}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                {totalStockRetail > 0 ? Math.round((totalPotentialProfit / totalStockRetail) * 100) : 0}% Projected Margin
+              </p>
+            </div>
+          </div>
 
           {/* Search & Category Filter */}
           <div className="flex flex-col sm:flex-row gap-3 items-center justify-between p-3 rounded-2xl bg-card border border-border">
@@ -243,7 +310,9 @@ export const InventoryPage: React.FC = () => {
                   <tr>
                     <th className="py-3 px-4">Toy</th>
                     <th className="py-3 px-4">Category</th>
-                    <th className="py-3 px-4">Price</th>
+                    <th className="py-3 px-4">Real Cost</th>
+                    <th className="py-3 px-4">Selling Price</th>
+                    <th className="py-3 px-4">Profit / Margin</th>
                     <th className="py-3 px-4">Current Stock</th>
                     <th className="py-3 px-4">Quick Restock</th>
                     <th className="py-3 px-4 text-right">Actions</th>
@@ -253,6 +322,10 @@ export const InventoryPage: React.FC = () => {
                   {filteredProducts.map((p) => {
                     const isOut = p.stock <= 0;
                     const isLow = p.stock > 0 && p.stock <= 5;
+                    const cost = p.cost_price ?? Math.round(p.price * 0.6);
+                    const profit = p.price - cost;
+                    const margin = p.price > 0 ? Math.round((profit / p.price) * 100) : 0;
+                    const isProfit = profit >= 0;
 
                     return (
                       <tr key={p.id} className="hover:bg-muted/20 transition-colors">
@@ -278,8 +351,25 @@ export const InventoryPage: React.FC = () => {
                           {p.category}
                         </td>
 
-                        <td className="py-3 px-4 font-black text-sm text-foreground">
+                        <td className="py-3 px-4 font-mono font-bold text-muted-foreground text-xs">
+                          {formatCurrency(cost)}
+                        </td>
+
+                        <td className="py-3 px-4 font-mono font-black text-sm text-foreground">
                           {formatCurrency(p.price)}
+                        </td>
+
+                        <td className="py-3 px-4">
+                          <span
+                            className={cn(
+                              'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-black',
+                              isProfit
+                                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                                : 'bg-red-500/15 text-red-400 border border-red-500/30'
+                            )}
+                          >
+                            {isProfit ? `+₹${profit}` : `-₹${Math.abs(profit)}`} ({margin}%)
+                          </span>
                         </td>
 
                         <td className="py-3 px-4">
@@ -402,7 +492,36 @@ export const InventoryPage: React.FC = () => {
 
               <div>
                 <label className="text-xs font-bold text-muted-foreground block mb-1">
-                  Price (₹):
+                  Barcode / SKU:
+                </label>
+                <input
+                  type="text"
+                  value={formBarcode}
+                  onChange={(e) => setFormBarcode(e.target.value)}
+                  className="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm font-mono focus:ring-2 focus:ring-brand focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="text-xs font-bold text-muted-foreground block mb-1">
+                  Real Cost (₹):
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="0"
+                  value={formCostPrice}
+                  onChange={(e) => setFormCostPrice(Number(e.target.value) || 0)}
+                  placeholder="e.g. 25"
+                  className="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm font-mono font-bold focus:ring-2 focus:ring-brand focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-muted-foreground block mb-1">
+                  Selling Price (₹):
                 </label>
                 <input
                   type="number"
@@ -410,15 +529,14 @@ export const InventoryPage: React.FC = () => {
                   min="0"
                   value={formPrice}
                   onChange={(e) => setFormPrice(Number(e.target.value) || 0)}
-                  className="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm font-mono font-bold focus:ring-2 focus:ring-brand focus:outline-none"
+                  placeholder="e.g. 50"
+                  className="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm font-mono font-black text-foreground focus:ring-2 focus:ring-brand focus:outline-none"
                 />
               </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-bold text-muted-foreground block mb-1">
-                  Stock Quantity:
+                  Stock Qty:
                 </label>
                 <input
                   type="number"
@@ -429,18 +547,23 @@ export const InventoryPage: React.FC = () => {
                   className="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm font-mono font-bold focus:ring-2 focus:ring-brand focus:outline-none"
                 />
               </div>
+            </div>
 
-              <div>
-                <label className="text-xs font-bold text-muted-foreground block mb-1">
-                  Barcode / SKU:
-                </label>
-                <input
-                  type="text"
-                  value={formBarcode}
-                  onChange={(e) => setFormBarcode(e.target.value)}
-                  className="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm font-mono focus:ring-2 focus:ring-brand focus:outline-none"
-                />
-              </div>
+            {/* Live Profit Margin Badge */}
+            <div className="p-2.5 rounded-xl bg-muted/40 border border-border flex items-center justify-between text-xs">
+              <span className="font-bold text-muted-foreground">Profit per Toy:</span>
+              <span
+                className={cn(
+                  'font-black text-xs px-2.5 py-0.5 rounded-lg',
+                  formPrice >= formCostPrice
+                    ? 'text-emerald-400 bg-emerald-500/10'
+                    : 'text-red-400 bg-red-500/10'
+                )}
+              >
+                {formPrice >= formCostPrice
+                  ? `+₹${formPrice - formCostPrice} (${formPrice > 0 ? Math.round(((formPrice - formCostPrice) / formPrice) * 100) : 0}% Margin)`
+                  : `-₹${formCostPrice - formPrice} (Loss: Below Cost!)`}
+              </span>
             </div>
 
             {/* Toy Photo / Camera Capture Section */}

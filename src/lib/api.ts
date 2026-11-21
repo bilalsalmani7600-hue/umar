@@ -160,7 +160,15 @@ export const api = {
           .insert([product])
           .select()
           .single();
-        if (error) throw error;
+        if (error) {
+          if (error.message?.includes('cost_price')) {
+            const { cost_price, ...rest } = product as any;
+            const { data: d2, error: e2 } = await supabase.from('products').insert([rest]).select().single();
+            if (e2) throw e2;
+            return { ...d2, cost_price };
+          }
+          throw error;
+        }
         return data;
       } catch (err) {
         console.warn('Supabase createProduct failed, saving locally:', err);
@@ -188,7 +196,20 @@ export const api = {
           .eq('id', id)
           .select()
           .single();
-        if (error) throw error;
+        if (error) {
+          if (error.message?.includes('cost_price')) {
+            const { cost_price, ...rest } = updates as any;
+            const { data: d2, error: e2 } = await supabase
+              .from('products')
+              .update({ ...rest, updated_at: new Date().toISOString() })
+              .eq('id', id)
+              .select()
+              .single();
+            if (e2) throw e2;
+            return { ...d2, cost_price };
+          }
+          throw error;
+        }
         return data;
       } catch (err) {
         console.warn('Supabase updateProduct failed:', err);

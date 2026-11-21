@@ -16,6 +16,8 @@ import {
   XCircle,
   PackageCheck,
   CheckCircle2,
+  Wallet,
+  Percent,
 } from 'lucide-react';
 
 export const ReportsPage: React.FC = () => {
@@ -28,12 +30,28 @@ export const ReportsPage: React.FC = () => {
     const completedOrders = orders.filter((o) => o.status === 'COMPLETED');
     const cancelledOrders = orders.filter((o) => o.status === 'VOID');
 
+    // Create cost price lookup map by product id and lowercase name
+    const productCostMap = new Map<string, number>();
+    products.forEach((p) => {
+      const cost = p.cost_price ?? Math.round(p.price * 0.6);
+      if (p.id) productCostMap.set(p.id, cost);
+      if (p.name) productCostMap.set(p.name.toLowerCase().trim(), cost);
+    });
+
     let totalRevenue = 0;
+    let totalCost = 0;
     let cashRevenue = 0;
     let upiRevenue = 0;
     let totalProductsSold = 0;
 
-    const productSalesMap: Record<string, { name: string; quantity: number; revenue: number; image?: string }> = {};
+    const productSalesMap: Record<string, { 
+      name: string; 
+      quantity: number; 
+      revenue: number; 
+      cost: number;
+      profit: number;
+      image?: string 
+    }> = {};
 
     completedOrders.forEach((ord) => {
       totalRevenue += ord.total_amount;
@@ -52,18 +70,36 @@ export const ReportsPage: React.FC = () => {
       ord.items?.forEach((item) => {
         totalProductsSold += item.quantity;
         const key = item.product_name || item.product_id;
+        
+        // Find product cost
+        const unitCost = 
+          (item.product_id ? productCostMap.get(item.product_id) : undefined) ??
+          (item.product_name ? productCostMap.get(item.product_name.toLowerCase().trim()) : undefined) ??
+          Math.round(item.unit_price * 0.6);
+
+        const itemTotalCost = unitCost * item.quantity;
+        const itemProfit = item.subtotal - itemTotalCost;
+        totalCost += itemTotalCost;
+
         if (!productSalesMap[key]) {
           productSalesMap[key] = {
             name: item.product_name,
             quantity: 0,
             revenue: 0,
+            cost: 0,
+            profit: 0,
             image: item.image,
           };
         }
         productSalesMap[key].quantity += item.quantity;
         productSalesMap[key].revenue += item.subtotal;
+        productSalesMap[key].cost += itemTotalCost;
+        productSalesMap[key].profit += itemProfit;
       });
     });
+
+    const netProfit = totalRevenue - totalCost;
+    const profitMargin = totalRevenue > 0 ? Math.round((netProfit / totalRevenue) * 100) : 0;
 
     const topSellingToys = Object.values(productSalesMap).sort(
       (a, b) => b.quantity - a.quantity
@@ -74,6 +110,9 @@ export const ReportsPage: React.FC = () => {
 
     return {
       totalRevenue,
+      totalCost,
+      netProfit,
+      profitMargin,
       cashRevenue,
       upiRevenue,
       totalOrders: orders.length,
@@ -92,6 +131,9 @@ export const ReportsPage: React.FC = () => {
       Toy_Name: t.name,
       Units_Sold: t.quantity,
       Revenue_Generated: t.revenue,
+      Wholesale_Cost: t.cost,
+      Net_Profit: t.profit,
+      Profit_Margin_Pct: t.revenue > 0 ? `${Math.round((t.profit / t.revenue) * 100)}%` : '0%',
     }));
     downloadCSV('exhibition_toy_sales_report', rows);
   };
@@ -134,7 +176,7 @@ export const ReportsPage: React.FC = () => {
           </div>
 
           {/* Metric KPI Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
             {/* Total Revenue */}
             <div className="p-4 rounded-2xl border border-border bg-card">
               <div className="flex items-center justify-between text-muted-foreground mb-2">
@@ -151,6 +193,22 @@ export const ReportsPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Net Profit & Margin */}
+            <div className="p-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/5">
+              <div className="flex items-center justify-between text-muted-foreground mb-2">
+                <span className="text-xs font-black uppercase tracking-wider text-emerald-400">Net Profit</span>
+                <Wallet className="h-4 w-4 text-emerald-400" />
+              </div>
+              <div className="text-2xl sm:text-3xl font-black text-emerald-400">
+                {formatCurrency(metrics.netProfit)}
+              </div>
+              <div className="mt-2 flex items-center gap-2 text-[11px] font-bold text-muted-foreground">
+                <span>Cost: {formatCurrency(metrics.totalCost)}</span>
+                <span>•</span>
+                <span className="text-emerald-400 font-extrabold">{metrics.profitMargin}% Margin</span>
+              </div>
+            </div>
+
             {/* Orders Completed */}
             <div className="p-4 rounded-2xl border border-border bg-card">
               <div className="flex items-center justify-between text-muted-foreground mb-2">
@@ -161,7 +219,7 @@ export const ReportsPage: React.FC = () => {
                 {metrics.completedOrdersCount}
               </div>
               <div className="mt-2 text-[11px] font-bold text-muted-foreground flex items-center gap-2">
-                <span>Total Generated: {metrics.totalOrders}</span>
+                <span>Total: {metrics.totalOrders}</span>
                 <span>•</span>
                 <span className="text-red-400">Void: {metrics.cancelledOrdersCount}</span>
               </div>
@@ -170,19 +228,19 @@ export const ReportsPage: React.FC = () => {
             {/* Average Order Value */}
             <div className="p-4 rounded-2xl border border-border bg-card">
               <div className="flex items-center justify-between text-muted-foreground mb-2">
-                <span className="text-xs font-black uppercase tracking-wider">Avg Order Value</span>
+                <span className="text-xs font-black uppercase tracking-wider">Avg Order</span>
                 <TrendingUp className="h-4 w-4 text-amber-400" />
               </div>
               <div className="text-2xl sm:text-3xl font-black text-foreground">
                 {formatCurrency(metrics.averageOrderValue)}
               </div>
               <div className="mt-2 text-[11px] font-bold text-muted-foreground">
-                Per checkout customer
+                Per customer ticket
               </div>
             </div>
 
             {/* Products Sold */}
-            <div className="p-4 rounded-2xl border border-border bg-card">
+            <div className="p-4 rounded-2xl border border-border bg-card col-span-2 sm:col-span-1">
               <div className="flex items-center justify-between text-muted-foreground mb-2">
                 <span className="text-xs font-black uppercase tracking-wider">Products Sold</span>
                 <PackageCheck className="h-4 w-4 text-purple-400" />
@@ -191,7 +249,7 @@ export const ReportsPage: React.FC = () => {
                 {metrics.totalProductsSold}
               </div>
               <div className="mt-2 text-[11px] font-bold text-muted-foreground">
-                Remaining Stock: {metrics.remainingInventory} units
+                Stock Left: {metrics.remainingInventory} pcs
               </div>
             </div>
           </div>
@@ -202,10 +260,10 @@ export const ReportsPage: React.FC = () => {
             <div className="lg:col-span-8 rounded-2xl border border-border bg-card p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-extrabold text-sm sm:text-base text-foreground">
-                  Top Selling Toys Ranking
+                  Top Selling Toys Ranking & Profits
                 </h3>
                 <span className="text-xs text-muted-foreground font-semibold">
-                  By units sold
+                  By units & gross margins
                 </span>
               </div>
 
@@ -227,7 +285,13 @@ export const ReportsPage: React.FC = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between text-xs font-extrabold mb-1">
                             <span className="truncate">{toy.name}</span>
-                            <span>{toy.quantity} units ({formatCurrency(toy.revenue)})</span>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-muted-foreground">{toy.quantity} pcs</span>
+                              <span>{formatCurrency(toy.revenue)}</span>
+                              <span className="text-emerald-400 font-bold text-[11px] bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                                +{formatCurrency(toy.profit)}
+                              </span>
+                            </div>
                           </div>
                           <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
                             <div
@@ -334,6 +398,15 @@ export const ReportsPage: React.FC = () => {
               <div className="flex justify-between font-bold">
                 <span>UPI Revenue:</span>
                 <span>{formatCurrency(metrics.upiRevenue)}</span>
+              </div>
+              <div className="border-b border-dashed border-zinc-300 py-1" />
+              <div className="flex justify-between text-zinc-600 dark:text-zinc-400">
+                <span>Total Wholesale Cost:</span>
+                <span>{formatCurrency(metrics.totalCost)}</span>
+              </div>
+              <div className="flex justify-between font-bold text-emerald-600 dark:text-emerald-400">
+                <span>ESTIMATED NET PROFIT:</span>
+                <span>{formatCurrency(metrics.netProfit)} ({metrics.profitMargin}%)</span>
               </div>
               <div className="border-b-2 border-black dark:border-white py-1" />
               <div className="flex justify-between text-sm font-black pt-1">

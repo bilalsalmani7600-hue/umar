@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSettings } from '@/context/SettingsContext';
 import { api } from '@/lib/api';
 import { resetSupabaseClient, getSupabaseCredentials } from '@/lib/supabase';
@@ -6,6 +6,12 @@ import { Navbar } from '@/components/common/Navbar';
 import { Sidebar } from '@/components/common/Sidebar';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
+import {
+  isAppInstalled,
+  canPromptInstall,
+  promptInstall,
+  subscribeToInstallPrompt,
+} from '@/lib/pwa';
 import {
   Settings,
   Database,
@@ -17,6 +23,9 @@ import {
   CheckCircle2,
   Store,
   Terminal,
+  Smartphone,
+  Laptop,
+  Info,
 } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
@@ -36,6 +45,51 @@ export const SettingsPage: React.FC = () => {
   const [supabaseKey, setSupabaseKey] = useState<string>(currentCreds.key || '');
   const [isTesting, setIsTesting] = useState<boolean>(false);
   const [isResetting, setIsResetting] = useState<boolean>(false);
+
+  // PWA Installation State
+  const [isInstalled, setIsInstalled] = useState<boolean>(isAppInstalled());
+  const [canPrompt, setCanPrompt] = useState<boolean>(canPromptInstall());
+  const [showManualGuide, setShowManualGuide] = useState<boolean>(false);
+  const [activeGuideTab, setActiveGuideTab] = useState<'android' | 'ios' | 'pc'>('android');
+
+  useEffect(() => {
+    const unsubscribe = subscribeToInstallPrompt((canInstall) => {
+      setCanPrompt(canInstall);
+      setIsInstalled(isAppInstalled());
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (isInstalled) {
+      toast({
+        title: 'App Already Installed',
+        description: 'Toy Stall POS is running in standalone app mode on this device.',
+        variant: 'success',
+      });
+      return;
+    }
+
+    if (canPrompt) {
+      const accepted = await promptInstall();
+      if (accepted) {
+        setIsInstalled(true);
+        toast({
+          title: 'App Installed Successfully!',
+          description: 'Toy Stall POS has been added to your home screen/desktop.',
+          variant: 'success',
+        });
+        return;
+      }
+    }
+
+    // If browser does not support programmatic prompt (e.g. iOS Safari) or hasn't fired it yet
+    setShowManualGuide(true);
+    toast({
+      title: 'Installation Instructions',
+      description: 'Follow the device steps below to add Toy Stall POS to your home screen.',
+    });
+  };
 
   const handleSaveCredentials = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,6 +186,158 @@ export const SettingsPage: React.FC = () => {
             <p className="text-xs text-muted-foreground mt-0.5">
               Configure database sync, counter assignments, and exhibition parameters
             </p>
+          </div>
+
+          {/* PWA INSTALLATION CARD */}
+          <div className="p-5 rounded-2xl border border-border bg-card space-y-4 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-border gap-2">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-brand/15 border border-brand/30 flex items-center justify-center text-brand shrink-0">
+                  <Smartphone className="h-5 w-5" />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-sm sm:text-base flex items-center gap-2">
+                    Install App (PWA) on Mobile & PC
+                  </h4>
+                  <p className="text-xs text-muted-foreground">
+                    Launch Toy Stall POS full-screen with 0ms lag — no browser URL bars
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                {isInstalled ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Installed & Running
+                  </span>
+                ) : canPrompt ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-brand/15 text-brand border border-brand/30 animate-pulse">
+                    ⚡ 1-Tap Install Ready
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-muted text-muted-foreground border border-border">
+                    Browser Mode
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 rounded-xl bg-muted/30 border border-border">
+              <div className="space-y-1">
+                <p className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <Download className="h-4 w-4 text-brand" />
+                  {isInstalled ? 'Toy Stall POS App is Active' : 'Install as Standalone Web App'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {isInstalled
+                    ? 'App is installed and running in dedicated standalone window mode.'
+                    : 'Installs directly onto your Android phone, iPhone, iPad, or Windows PC desktop.'}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                {!isInstalled && (
+                  <Button
+                    type="button"
+                    onClick={handleInstallClick}
+                    className="bg-brand hover:bg-brand/90 text-white font-extrabold px-5 py-2.5 rounded-xl shadow-md flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    <span>Install App</span>
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowManualGuide(!showManualGuide)}
+                  className="font-bold text-xs px-3.5 py-2 rounded-xl"
+                >
+                  {showManualGuide ? 'Hide Guide' : 'How to Install ℹ️'}
+                </Button>
+              </div>
+            </div>
+
+            {/* DEVICE-SPECIFIC INSTALLATION TABS & GUIDE */}
+            {(showManualGuide || !isInstalled) && (
+              <div className="pt-2 border-t border-border/60">
+                <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    Quick Install Instructions:
+                  </span>
+                  <div className="flex gap-1 bg-muted/60 p-1 rounded-lg">
+                    <button
+                      type="button"
+                      onClick={() => setActiveGuideTab('android')}
+                      className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all ${
+                        activeGuideTab === 'android'
+                          ? 'bg-brand text-white shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      🤖 Android
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveGuideTab('ios')}
+                      className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all ${
+                        activeGuideTab === 'ios'
+                          ? 'bg-brand text-white shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      🍎 iPhone / iPad
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveGuideTab('pc')}
+                      className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all ${
+                        activeGuideTab === 'pc'
+                          ? 'bg-brand text-white shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      💻 PC / Laptop
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-background border border-border text-xs space-y-2">
+                  {activeGuideTab === 'android' && (
+                    <div className="space-y-1.5 text-muted-foreground">
+                      <p className="font-bold text-foreground">📱 On Android (Google Chrome / Brave):</p>
+                      <ol className="list-decimal list-inside space-y-1.5">
+                        <li>Tap the red <strong className="text-foreground">"Install App"</strong> button above.</li>
+                        <li>If prompted, tap <strong className="text-foreground">"Install"</strong> or <strong className="text-foreground">"Add to Home screen"</strong>.</li>
+                        <li>Alternatively, tap Chrome&apos;s three-dot menu (<strong className="text-foreground">⋮</strong>) at top-right and select <strong className="text-foreground">"Install app"</strong>.</li>
+                      </ol>
+                    </div>
+                  )}
+
+                  {activeGuideTab === 'ios' && (
+                    <div className="space-y-1.5 text-muted-foreground">
+                      <p className="font-bold text-foreground">🍎 On iPhone / iPad (Safari):</p>
+                      <ol className="list-decimal list-inside space-y-1.5">
+                        <li>Open this URL in <strong className="text-foreground">Safari</strong>.</li>
+                        <li>Tap the <strong className="text-foreground">Share button</strong> (square icon with upward arrow <span className="text-base leading-none">📤</span>) in the bottom navigation bar.</li>
+                        <li>Scroll down and tap <strong className="text-foreground">"Add to Home Screen" ➕</strong>.</li>
+                        <li>Tap <strong className="text-foreground">"Add"</strong> at top-right. The Toy Stall POS icon will appear on your iPhone screen!</li>
+                      </ol>
+                    </div>
+                  )}
+
+                  {activeGuideTab === 'pc' && (
+                    <div className="space-y-1.5 text-muted-foreground">
+                      <p className="font-bold text-foreground">💻 On Windows PC or Mac (Chrome / Edge):</p>
+                      <ol className="list-decimal list-inside space-y-1.5">
+                        <li>Click the red <strong className="text-foreground">"Install App"</strong> button above.</li>
+                        <li>Or look at the right end of your browser address bar and click the <strong className="text-foreground">Install Icon (⊕ or 💻)</strong>.</li>
+                        <li>Click <strong className="text-foreground">"Install"</strong>. A standalone desktop app window will open automatically.</li>
+                      </ol>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* SUPABASE CONNECTION CARD */}

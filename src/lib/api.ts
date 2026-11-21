@@ -492,7 +492,9 @@ export const api = {
       const order = updatedOrder as Order;
       const products = getLocalProducts();
       const updatedProducts = products.map((p) => {
-        const matchedItem = order.items?.find((item) => item.product_id === p.id);
+        const matchedItem = order.items?.find(
+          (item) => item.product_id === p.id || item.product_name?.toLowerCase() === p.name?.toLowerCase()
+        );
         if (matchedItem) {
           const newStock = Math.max(0, p.stock - matchedItem.quantity);
           return { ...p, stock: newStock };

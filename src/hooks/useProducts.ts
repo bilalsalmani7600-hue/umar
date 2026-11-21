@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Product } from '@/lib/types';
@@ -9,8 +10,31 @@ export function useProducts() {
   const query = useQuery({
     queryKey: ['products'],
     queryFn: () => api.getProducts(),
-    staleTime: 1000 * 30, // 30s cache
+    staleTime: 1000 * 2, // 2s cache
+    refetchInterval: 2500, // Background polling guarantee every 2.5s
   });
+
+  // Real-time synchronization for instant stock updates
+  useEffect(() => {
+    const unsubscribe = api.subscribeRealtime(
+      () => {
+        // When new order arrives
+        queryClient.invalidateQueries({ queryKey: ['products'] });
+      },
+      () => {
+        // When order updated / completed
+        queryClient.invalidateQueries({ queryKey: ['products'] });
+      },
+      () => {
+        // When product or inventory changes
+        queryClient.invalidateQueries({ queryKey: ['products'] });
+      }
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, [queryClient]);
 
   const updateProductMutation = useMutation({
     mutationFn: ({ id, updates }: { id: string; updates: Partial<Product> }) =>

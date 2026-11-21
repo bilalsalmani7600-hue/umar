@@ -154,7 +154,7 @@ export const CounterPage: React.FC = () => {
         <Sidebar />
 
         {/* Main Workspace */}
-        <main className="flex-1 flex flex-col overflow-hidden min-h-0 min-w-0 p-2.5 sm:p-3.5 lg:p-4 gap-2.5">
+        <main className="flex-1 flex flex-col overflow-hidden min-h-0 min-w-0 p-2.5 sm:p-3.5 lg:p-4 gap-2.5 pb-20 lg:pb-4">
           {/* Top Title & KPI Header (Matching Image 2) */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0">
             <div className="flex items-center gap-2.5">

@@ -52,7 +52,7 @@ export const OrdersPage: React.FC = () => {
       <div className="flex-1 flex overflow-hidden min-h-0 w-full">
         <Sidebar />
 
-        <main className="flex-1 flex flex-col overflow-y-auto p-4 sm:p-6 gap-4 min-h-0">
+        <main className="flex-1 flex flex-col overflow-y-auto p-4 sm:p-6 gap-4 min-h-0 pb-24 md:pb-6">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>

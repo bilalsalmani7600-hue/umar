@@ -5,6 +5,7 @@ import { AuthProvider } from '@/context/AuthContext';
 import { SettingsProvider } from '@/context/SettingsContext';
 import { CartProvider } from '@/context/CartContext';
 import { Toaster } from '@/components/ui/toaster';
+import { MobileBottomNav } from '@/components/common/MobileBottomNav';
 
 // Pages
 import { POSPage } from '@/pages/POSPage';
@@ -52,6 +53,9 @@ export function App() {
                 {/* Catch all */}
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
+
+              {/* Mobile Bottom Navigation Bar (Visible on mobile screens) */}
+              <MobileBottomNav />
 
               {/* Toast Notifications */}
               <Toaster />

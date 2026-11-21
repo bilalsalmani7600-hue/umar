@@ -183,7 +183,7 @@ export const InventoryPage: React.FC = () => {
       <div className="flex-1 flex overflow-hidden min-h-0 w-full">
         <Sidebar />
 
-        <main className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden p-4 sm:p-6 gap-4 min-h-0 h-full scroll-smooth">
+        <main className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden p-3.5 sm:p-6 gap-4 min-h-0 h-full scroll-smooth pb-24 md:pb-6">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
@@ -314,8 +314,107 @@ export const InventoryPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Product Inventory Table (Guaranteed Smooth Scrolling with Sticky Header) */}
-          <div className="rounded-2xl border border-border bg-card flex flex-col min-h-0 shadow-sm overflow-hidden">
+          {/* 1. MOBILE INVENTORY CARDS (Phone-Optimized with Zero Side-Scrolling) */}
+          <div className="block md:hidden space-y-3">
+            {filteredProducts.map((p) => {
+              const isOut = p.stock <= 0;
+              const isLow = p.stock > 0 && p.stock <= 5;
+              const cost = p.cost_price ?? Math.round(p.price * 0.6);
+              const profit = p.price - cost;
+              const margin = p.price > 0 ? Math.round((profit / p.price) * 100) : 0;
+              const isProfit = profit >= 0;
+
+              return (
+                <div key={p.id} className="p-3.5 rounded-2xl bg-card border border-border shadow-xs space-y-2.5">
+                  <div className="flex items-start justify-between gap-2.5">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <img
+                        src={p.image}
+                        alt={p.name}
+                        className="h-12 w-12 rounded-xl object-cover bg-muted border border-border shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <h4 className="font-extrabold text-sm text-foreground truncate">{p.name}</h4>
+                        <p className="text-[11px] text-muted-foreground">{p.category}</p>
+                      </div>
+                    </div>
+
+                    <div className="text-right shrink-0">
+                      <div className="font-mono font-black text-base text-foreground">{formatCurrency(p.price)}</div>
+                      <div className="text-[10px] font-mono text-muted-foreground">Cost: {formatCurrency(cost)}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1 border-t border-border/50 text-xs">
+                    <span
+                      className={cn(
+                        'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-black',
+                        isProfit
+                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                          : 'bg-red-500/15 text-red-400 border border-red-500/30'
+                      )}
+                    >
+                      {isProfit ? `+₹${profit}` : `-₹${Math.abs(profit)}`} ({margin}% Margin)
+                    </span>
+
+                    <div>
+                      {isOut ? (
+                        <span className="px-2 py-0.5 rounded-full text-[11px] font-black bg-red-500/15 text-red-400 border border-red-500/30">
+                          Out of Stock (0)
+                        </span>
+                      ) : isLow ? (
+                        <span className="px-2 py-0.5 rounded-full text-[11px] font-black bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                          Low Stock ({p.stock})
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-[11px] font-black bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                          Stock: {p.stock}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Restock & Actions */}
+                  <div className="flex items-center justify-between pt-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-bold text-muted-foreground">Restock:</span>
+                      {[+5, +10, +25].map((delta) => (
+                        <button
+                          key={delta}
+                          type="button"
+                          onClick={() => adjustStock({ id: p.id, delta, reason: 'RESTOCK' })}
+                          className="px-2 py-1 rounded-lg border border-border bg-muted/60 hover:bg-muted text-[11px] font-bold"
+                        >
+                          +{delta}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <Button onClick={() => handleOpenEdit(p)} size="sm" variant="ghost" className="h-8 w-8 p-0">
+                        <Edit2 className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          if (window.confirm(`Delete product ${p.name}?`)) {
+                            deleteProduct(p.id);
+                          }
+                        }}
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 text-red-400 hover:text-red-500"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* 2. DESKTOP PRODUCT TABLE (Hidden on Mobile, Smooth Sticky-Header on Desktop) */}
+          <div className="hidden md:flex flex-col min-h-0 rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
             <div className="overflow-x-auto overflow-y-auto max-h-[58vh] sm:max-h-[66vh]">
               <table className="w-full text-left text-xs relative">
                 <thead className="bg-muted/95 backdrop-blur-md border-b border-border font-black text-muted-foreground uppercase tracking-wider sticky top-0 z-10 shadow-xs">

@@ -17,6 +17,13 @@ import {
   Keyboard,
   User,
   Store,
+  Menu,
+  X,
+  Package,
+  PieChart,
+  ShoppingCart,
+  Ticket,
+  FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -46,6 +53,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showStaffMenu, setShowStaffMenu] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const pendingOrdersCount = orders.filter((o) => o.status === 'NEW').length;
 
@@ -242,8 +250,127 @@ export const Navbar: React.FC<NavbarProps> = ({
               </>
             )}
           </div>
+          {/* Mobile Hamburger Menu Toggle Button */}
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="md:hidden h-9 w-9 rounded-xl border border-border bg-muted/60 hover:bg-muted flex items-center justify-center text-foreground active:scale-95 transition-all"
+            title="Navigation Menu"
+          >
+            {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
         </div>
       </header>
+
+      {/* Mobile Slide-down Navigation Drawer */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex flex-col bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="absolute inset-0" onClick={() => setIsMobileMenuOpen(false)} />
+          <div className="relative z-10 w-full bg-card border-b border-border p-4 shadow-2xl animate-in slide-in-from-top duration-200 space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-border">
+              <span className="font-extrabold text-sm text-foreground">Menu & Navigation</span>
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <nav className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => {
+                  navigate('/');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={cn(
+                  'p-3 rounded-xl flex items-center gap-2.5 font-bold text-xs border text-left',
+                  location.pathname === '/' ? 'bg-brand text-white border-brand' : 'bg-muted/40 border-border text-foreground'
+                )}
+              >
+                <ShoppingCart className="h-4 w-4 shrink-0" />
+                <span>POS Billing</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  navigate('/tokens');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={cn(
+                  'p-3 rounded-xl flex items-center justify-between font-bold text-xs border text-left',
+                  location.pathname === '/tokens' ? 'bg-brand text-white border-brand' : 'bg-muted/40 border-border text-foreground'
+                )}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Ticket className="h-4 w-4 shrink-0" />
+                  <span>Tokens (Live)</span>
+                </div>
+                {pendingOrdersCount > 0 && (
+                  <span className="h-4 min-w-4 px-1 rounded-full bg-amber-500 text-black text-[9px] font-black flex items-center justify-center">
+                    {pendingOrdersCount}
+                  </span>
+                )}
+              </button>
+
+              <button
+                onClick={() => {
+                  navigate('/inventory');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={cn(
+                  'p-3 rounded-xl flex items-center gap-2.5 font-bold text-xs border text-left',
+                  location.pathname === '/inventory' ? 'bg-brand text-white border-brand' : 'bg-muted/40 border-border text-foreground'
+                )}
+              >
+                <Package className="h-4 w-4 shrink-0" />
+                <span>Inventory & Stock</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  navigate('/reports');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={cn(
+                  'p-3 rounded-xl flex items-center gap-2.5 font-bold text-xs border text-left',
+                  location.pathname === '/reports' ? 'bg-brand text-white border-brand' : 'bg-muted/40 border-border text-foreground'
+                )}
+              >
+                <PieChart className="h-4 w-4 shrink-0" />
+                <span>Reports & Analytics</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  navigate('/orders');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={cn(
+                  'p-3 rounded-xl flex items-center gap-2.5 font-bold text-xs border text-left',
+                  location.pathname === '/orders' ? 'bg-brand text-white border-brand' : 'bg-muted/40 border-border text-foreground'
+                )}
+              >
+                <FileText className="h-4 w-4 shrink-0" />
+                <span>Orders Ledger</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  navigate('/settings');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={cn(
+                  'p-3 rounded-xl flex items-center gap-2.5 font-bold text-xs border text-left',
+                  location.pathname === '/settings' ? 'bg-brand text-white border-brand' : 'bg-muted/40 border-border text-foreground'
+                )}
+              >
+                <Settings className="h-4 w-4 shrink-0" />
+                <span>Settings</span>
+              </button>
+            </nav>
+          </div>
+        </div>
+      )}
 
       {/* Keyboard shortcuts popup modal */}
       <KeyboardShortcutsModal

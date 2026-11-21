@@ -17,6 +17,8 @@ import {
   Tag,
   Banknote,
   QrCode,
+  Package,
+  PieChart,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -111,7 +113,7 @@ export const MobilePOSView: React.FC<MobilePOSViewProps> = ({
   const liveTokens = recentOrders.slice(0, 3);
 
   return (
-    <div className="w-full min-h-screen bg-[#FAF6F0] dark:bg-zinc-950 text-stone-900 dark:text-zinc-100 flex flex-col pb-8 select-none font-sans">
+    <div className="w-full min-h-screen bg-[#FAF6F0] dark:bg-zinc-950 text-stone-900 dark:text-zinc-100 flex flex-col pb-24 select-none font-sans">
       {/* 1. TOP BAR (Matching Screenshot) */}
       <header className="flex items-center justify-between px-4 pt-3 pb-2.5 bg-[#FAF6F0] dark:bg-zinc-950 shrink-0">
         <div className="flex items-center gap-2">
@@ -141,28 +143,43 @@ export const MobilePOSView: React.FC<MobilePOSViewProps> = ({
         </div>
       </header>
 
-      {/* 2. SHORTCUT TABS (F1 Billing / F2 Tokens) */}
-      <div className="grid grid-cols-2 gap-2.5 px-4 mb-3 shrink-0">
+      {/* 2. SHORTCUT TABS (Billing, Tokens, Inventory, Reports) */}
+      <div className="grid grid-cols-4 gap-2 px-4 mb-3 shrink-0">
         <button
           type="button"
           onClick={() => navigate('/')}
-          className="h-11 rounded-xl bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 text-stone-900 dark:text-white font-bold text-sm flex items-center justify-center gap-2 shadow-sm"
+          className="h-11 rounded-xl bg-brand text-white font-black text-xs flex flex-col items-center justify-center shadow-xs"
         >
-          <span className="text-[10px] px-1.5 py-0.5 rounded border border-stone-300 dark:border-zinc-700 font-mono text-stone-600 dark:text-zinc-400">
-            F1
-          </span>
-          <span>Billing</span>
+          <span>🛍️ Billing</span>
         </button>
 
         <button
           type="button"
           onClick={() => navigate('/tokens')}
-          className="h-11 rounded-xl bg-[#7A1D24] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-sm active:scale-98 transition-all"
+          className="h-11 rounded-xl bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 text-stone-900 dark:text-white font-bold text-xs flex flex-col items-center justify-center shadow-xs relative"
         >
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-black/20 font-mono text-white/90">
-            F2
-          </span>
-          <span>Tokens</span>
+          <span>🎫 Tokens</span>
+          {recentOrders.filter((o) => o.status === 'NEW').length > 0 && (
+            <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-amber-500 text-black text-[9px] font-black flex items-center justify-center">
+              {recentOrders.filter((o) => o.status === 'NEW').length}
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => navigate('/inventory')}
+          className="h-11 rounded-xl bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 text-stone-900 dark:text-white font-bold text-xs flex flex-col items-center justify-center shadow-xs"
+        >
+          <span>📦 Stock</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => navigate('/reports')}
+          className="h-11 rounded-xl bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 text-stone-900 dark:text-white font-bold text-xs flex flex-col items-center justify-center shadow-xs"
+        >
+          <span>📊 Reports</span>
         </button>
       </div>
 

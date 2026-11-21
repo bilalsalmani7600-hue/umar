@@ -19,7 +19,7 @@ import { ShoppingBag, Loader2 } from 'lucide-react';
 
 export const POSPage: React.FC = () => {
   const { products, isLoading: isProductsLoading } = useProducts();
-  const { orders, createOrder, isCreating } = useOrders();
+  const { orders, createOrder, transitionOrder, isCreating } = useOrders();
   const { items, addToCart, decrementQuantity, updateQuantity, clearCart, getItemQuantity } = useCart();
   const { currentUser } = useAuth();
   const { counterId, autoPrintReceipt } = useSettings();
@@ -93,6 +93,54 @@ export const POSPage: React.FC = () => {
     }
   };
 
+  // Handle Instant Cash Sale (Creates order and immediately completes + deducts stock)
+  const handleInstantCheckout = async () => {
+    if (items.length === 0 || isCreating) return;
+
+    try {
+      const payload = {
+        items: items.map((i) => ({
+          product_id: i.product.id,
+          product_name: i.product.name,
+          unit_price: i.product.price,
+          quantity: i.quantity,
+          subtotal: i.product.price * i.quantity,
+          image: i.product.image,
+        })),
+        counter_id: counterId,
+        staff_id: currentUser.id,
+        staff_name: currentUser.name,
+      };
+
+      const order = await createOrder(payload);
+      if (order?.id) {
+        await transitionOrder({
+          orderId: order.id,
+          targetStatus: 'COMPLETED',
+          staffId: currentUser.id,
+          staffName: currentUser.name,
+          payment: {
+            method: 'CASH',
+            amount: order.total_amount,
+            cashAmount: order.total_amount,
+            cashTendered: order.total_amount,
+            changeReturned: 0,
+          },
+        });
+      }
+      setGeneratedOrder(order);
+      setShowTokenModal(true);
+      clearCart();
+      setIsMobileCartOpen(false);
+
+      if (autoPrintReceipt) {
+        setShowReceiptModal(true);
+      }
+    } catch (e) {
+      // Error handled in useOrders hook
+    }
+  };
+
   // Barcode scanner integration
   const handleBarcodeScan = (barcode: string) => {
     const matched = products.find((p) => p.barcode === barcode || p.id === barcode);
@@ -124,6 +172,7 @@ export const POSPage: React.FC = () => {
           onClearCart={clearCart}
           getItemQuantity={getItemQuantity}
           onGenerateToken={handleGenerateToken}
+          onInstantCheckout={handleInstantCheckout}
           isGenerating={isCreating}
           recentOrders={orders}
           onOpenReceipt={() => setShowReceiptModal(true)}

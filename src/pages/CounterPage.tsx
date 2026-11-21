@@ -316,7 +316,7 @@ export const CounterPage: React.FC = () => {
                         setSelectedOrderId(ord.id);
                         setIsMobileModalOpen(true);
                       }}
-                      onQuickAccept={handleQuickAccept}
+                      onQuickApprove={handleCompleteOrder}
                       isProcessing={isTransitioning}
                     />
                   ))

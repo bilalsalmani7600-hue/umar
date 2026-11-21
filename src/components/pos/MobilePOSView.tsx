@@ -13,6 +13,7 @@ import {
   X,
   Ticket,
   Check,
+  CheckCircle2,
   Tag,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -28,6 +29,7 @@ interface MobilePOSViewProps {
   onClearCart: () => void;
   getItemQuantity: (productId: string) => number;
   onGenerateToken: () => void;
+  onInstantCheckout?: () => void;
   isGenerating: boolean;
   recentOrders: Order[];
   onOpenReceipt: () => void;
@@ -44,6 +46,7 @@ export const MobilePOSView: React.FC<MobilePOSViewProps> = ({
   onClearCart,
   getItemQuantity,
   onGenerateToken,
+  onInstantCheckout,
   isGenerating,
   recentOrders,
   onOpenReceipt,
@@ -392,21 +395,40 @@ export const MobilePOSView: React.FC<MobilePOSViewProps> = ({
             </span>
           </div>
 
-          {/* GENERATE TOKEN BUTTON */}
-          <button
-            type="button"
-            onClick={onGenerateToken}
-            disabled={cartItems.length === 0 || isGenerating}
-            className={cn(
-              'w-full h-12 py-3 rounded-xl font-black text-base flex items-center justify-center gap-2 shadow-md transition-all select-none',
-              cartItems.length === 0 || isGenerating
-                ? 'bg-stone-300 dark:bg-zinc-800 text-stone-500 cursor-not-allowed'
-                : 'bg-[#7A1D24] hover:bg-[#68181E] text-white active:scale-98'
+          {/* GENERATE TOKEN & INSTANT SALE BUTTONS */}
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={onGenerateToken}
+              disabled={cartItems.length === 0 || isGenerating}
+              className={cn(
+                'w-full h-12 py-3 rounded-xl font-black text-base flex items-center justify-center gap-2 shadow-md transition-all select-none',
+                cartItems.length === 0 || isGenerating
+                  ? 'bg-stone-300 dark:bg-zinc-800 text-stone-500 cursor-not-allowed'
+                  : 'bg-[#7A1D24] hover:bg-[#68181E] text-white active:scale-98'
+              )}
+            >
+              <Tag className="h-4.5 w-4.5" />
+              <span>{isGenerating ? 'Generating...' : 'Generate Token (F3)'}</span>
+            </button>
+
+            {onInstantCheckout && (
+              <button
+                type="button"
+                onClick={onInstantCheckout}
+                disabled={cartItems.length === 0 || isGenerating}
+                className={cn(
+                  'w-full h-11 rounded-xl font-black text-sm flex items-center justify-center gap-2 shadow-sm transition-all select-none',
+                  cartItems.length === 0 || isGenerating
+                    ? 'bg-stone-200 dark:bg-zinc-800/50 text-stone-400 cursor-not-allowed'
+                    : 'bg-emerald-600 hover:bg-emerald-500 text-white active:scale-98'
+                )}
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                <span>⚡ Instant Cash Sale (Deduct Stock)</span>
+              </button>
             )}
-          >
-            <Tag className="h-4.5 w-4.5" />
-            <span>{isGenerating ? 'Generating...' : 'Generate Token (F3)'}</span>
-          </button>
+          </div>
         </div>
 
         {/* CARD C: LIVE TOKENS (Matching Screenshot Bottom) */}

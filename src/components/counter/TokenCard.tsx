@@ -8,6 +8,7 @@ interface TokenCardProps {
   isSelected: boolean;
   onSelect: (order: Order) => void;
   onQuickAccept?: (orderId: string) => void;
+  onQuickApprove?: (orderId: string) => void;
   isProcessing?: boolean;
 }
 
@@ -16,13 +17,17 @@ export const TokenCard: React.FC<TokenCardProps> = ({
   isSelected,
   onSelect,
   onQuickAccept,
+  onQuickApprove,
   isProcessing,
 }) => {
   const isNew = order.status === 'NEW';
   const isAccepted = order.status === 'ACCEPTED';
-  const isPending = isNew || isAccepted;
+  const isPaid = order.status === 'PAID';
+  const isPending = isNew || isAccepted || isPaid;
   const isCompleted = order.status === 'COMPLETED';
   const isVoid = order.status === 'VOID';
+
+  const approveHandler = onQuickApprove || onQuickAccept;
 
   return (
     <div
@@ -51,32 +56,25 @@ export const TokenCard: React.FC<TokenCardProps> = ({
 
       {/* Right side: Actions, Badges & Time */}
       <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-        {/* Mobile Quick Action Buttons */}
-        {isNew && onQuickAccept && (
+        {/* Mobile Quick Action Buttons - 1-Click Approve & Deduct Stock */}
+        {!isCompleted && !isVoid && approveHandler && (
           <button
             type="button"
             disabled={isProcessing}
             onClick={(e) => {
               e.stopPropagation();
-              onQuickAccept(order.id);
+              approveHandler(order.id);
             }}
-            className="px-2.5 py-1 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white shadow-sm flex items-center gap-1 transition-all"
-            title="Approve Token"
+            className="px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white shadow-md flex items-center gap-1.5 transition-all"
+            title="1-Click Approve & Deduct Stock"
           >
-            <Check className="h-3 w-3 stroke-[3]" />
+            <Check className="h-3.5 w-3.5 stroke-[3]" />
             <span>Approve</span>
           </button>
         )}
 
-        {isAccepted && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-sky-500/15 text-sky-400 border border-sky-500/30">
-            <ArrowRight className="h-3 w-3" />
-            Pay
-          </span>
-        )}
-
-        {/* Status Badge (when not showing quick action) */}
-        {!isAccepted && !isNew && isPending && (
+        {/* Status Badge (when not showing quick action or once completed) */}
+        {!approveHandler && isPending && (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-500 border border-amber-500/30">
             <Clock className="h-3 w-3" />
             Pending
@@ -84,8 +82,8 @@ export const TokenCard: React.FC<TokenCardProps> = ({
         )}
 
         {isCompleted && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-            <CheckCircle2 className="h-3 w-3" /> Done
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-extrabold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+            <CheckCircle2 className="h-3.5 w-3.5" /> Done
           </span>
         )}
 

@@ -33,6 +33,7 @@ export const OrderDetailsView: React.FC<OrderDetailsViewProps> = ({
   isProcessing,
 }) => {
   const [showReceipt, setShowReceipt] = useState(false);
+  const [showPaymentDetails, setShowPaymentDetails] = useState(false);
 
   if (!order) {
     return (
@@ -159,38 +160,54 @@ export const OrderDetailsView: React.FC<OrderDetailsViewProps> = ({
           </div>
 
           {/* DYNAMIC ACTION BUTTONS ACCORDING TO STATE MACHINE */}
-          {/* STATE 1: NEW */}
-          {isNew && (
-            <div className="flex gap-2">
-              <Button
-                onClick={() => onAccept(order.id)}
-                disabled={isProcessing}
-                variant="success"
-                className="flex-1 h-11 sm:h-12 rounded-xl text-xs sm:text-sm font-black shadow-lg flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white"
-              >
-                <Check className="h-4.5 w-4.5" />
-                <span>Approve (Payment Verified)</span>
-              </Button>
+          {/* STATE 1 & 2: NEW or ACCEPTED -> 1-Tap Approve & Complete */}
+          {(isNew || isAccepted) && (
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => onComplete(order.id)}
+                  disabled={isProcessing}
+                  variant="success"
+                  className="flex-1 h-12 rounded-xl text-xs sm:text-sm font-black shadow-lg flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white"
+                >
+                  <CheckCircle2 className="h-4.5 w-4.5" />
+                  <span>1-Tap Approve & Deduct Stock</span>
+                </Button>
 
-              <Button
-                onClick={() => onVoid(order.id)}
-                disabled={isProcessing}
-                variant="destructive"
-                className="px-3.5 sm:px-4 h-11 sm:h-12 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-red-600 hover:bg-red-500 text-white"
-              >
-                <XCircle className="h-4.5 w-4.5" />
-                <span>Cancel</span>
-              </Button>
+                <Button
+                  onClick={() => onVoid(order.id)}
+                  disabled={isProcessing}
+                  variant="destructive"
+                  className="px-3.5 sm:px-4 h-12 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-red-600 hover:bg-red-500 text-white"
+                >
+                  <XCircle className="h-4.5 w-4.5" />
+                  <span>Cancel</span>
+                </Button>
+              </div>
+
+              {/* Collapsible custom UPI payment option */}
+              <div className="pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => setShowPaymentDetails(!showPaymentDetails)}
+                  className="w-full text-center text-xs font-semibold text-muted-foreground hover:text-foreground py-1"
+                >
+                  {showPaymentDetails ? '▲ Hide Custom Payment' : '▼ Or Record UPI / Split Payment'}
+                </button>
+                {showPaymentDetails && (
+                  <div className="mt-2">
+                    <PaymentSection
+                      totalAmount={order.total_amount}
+                      isProcessing={isProcessing}
+                      onConfirmPayment={async (paymentData) => {
+                        await onPaymentConfirm(order.id, paymentData);
+                        await onComplete(order.id);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-
-          {/* STATE 2: ACCEPTED -> Show Payment Section */}
-          {isAccepted && (
-            <PaymentSection
-              totalAmount={order.total_amount}
-              isProcessing={isProcessing}
-              onConfirmPayment={(paymentData) => onPaymentConfirm(order.id, paymentData)}
-            />
           )}
 
           {/* STATE 3: PAID -> Ready to complete and deduct stock */}

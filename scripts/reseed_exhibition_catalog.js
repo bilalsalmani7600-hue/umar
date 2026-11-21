@@ -1,0 +1,314 @@
+import dns from 'node:dns';
+dns.setDefaultResultOrder('ipv4first');
+
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://luamazblgroduhlbvjip.supabase.co';
+const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_ke7yUTS2EjUtgFM6f_NvNw_GrSZduff';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { persistSession: false },
+});
+
+export const NEW_CATALOG = [
+  {
+    id: 'c0000001-0000-0000-0000-000000000001',
+    name: 'Dumpling',
+    category: 'Squishy & Stress Toys',
+    price: 180,
+    stock: 12,
+    barcode: '8902001',
+    image: 'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=400&auto=format&fit=crop&q=80',
+    active: true,
+  },
+  {
+    id: 'c0000001-0000-0000-0000-000000000002',
+    name: 'Rainbow spring',
+    category: 'Fidget & Sensory',
+    price: 30,
+    stock: 30,
+    barcode: '8902002',
+    image: 'https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=400&auto=format&fit=crop&q=80',
+    active: true,
+  },
+  {
+    id: 'c0000001-0000-0000-0000-000000000003',
+    name: 'Slime',
+    category: 'Slime & Dough',
+    price: 55,
+    stock: 12,
+    barcode: '8902003',
+    image: 'https://images.unsplash.com/photo-1520697830682-bbb6e85e2b0b?w=400&auto=format&fit=crop&q=80',
+    active: true,
+  },
+  {
+    id: 'c0000001-0000-0000-0000-000000000004',
+    name: 'Spiderman',
+    category: 'Action Figures & Toys',
+    price: 37,
+    stock: 20,
+    barcode: '8902004',
+    image: 'https://images.unsplash.com/photo-1604200213928-ba3cf4fc8436?w=400&auto=format&fit=crop&q=80',
+    active: true,
+  },
+  {
+    id: 'c0000001-0000-0000-0000-000000000005',
+    name: 'Horror mask',
+    category: 'Costumes & Masks',
+    price: 85,
+    stock: 10,
+    barcode: '8902005',
+    image: 'https://images.unsplash.com/photo-1509248961158-e54f6934749c?w=400&auto=format&fit=crop&q=80',
+    active: true,
+  },
+  {
+    id: 'c0000001-0000-0000-0000-000000000006',
+    name: 'Snake',
+    category: 'Animals & Nature',
+    price: 39,
+    stock: 20,
+    barcode: '8902006',
+    image: 'https://images.unsplash.com/photo-1531386151447-fd76ad50012f?w=400&auto=format&fit=crop&q=80',
+    active: true,
+  },
+  {
+    id: 'c0000001-0000-0000-0000-000000000007',
+    name: 'Unicorn',
+    category: 'Collectibles & Cute',
+    price: 68,
+    stock: 10,
+    barcode: '8902007',
+    image: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=400&auto=format&fit=crop&q=80',
+    active: true,
+  },
+  {
+    id: 'c0000001-0000-0000-0000-000000000008',
+    name: 'Flying boy',
+    category: 'Action Figures & Drones',
+    price: 390,
+    stock: 10,
+    barcode: '8902008',
+    image: 'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=400&auto=format&fit=crop&q=80',
+    active: true,
+  },
+  {
+    id: 'c0000001-0000-0000-0000-000000000009',
+    name: 'Halloween',
+    category: 'Costumes & Masks',
+    price: 48,
+    stock: 24,
+    barcode: '8902009',
+    image: 'https://images.unsplash.com/photo-1508361001413-7a9dca21d090?w=400&auto=format&fit=crop&q=80',
+    active: true,
+  },
+  {
+    id: 'c0000001-0000-0000-0000-000000000010',
+    name: 'Spinner (₹28)',
+    category: 'Fidget & Sensory',
+    price: 28,
+    stock: 10,
+    barcode: '8902010',
+    image: 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?w=400&auto=format&fit=crop&q=80',
+    active: true,
+  },
+  {
+    id: 'c0000001-0000-0000-0000-000000000011',
+    name: 'Cube',
+    category: 'Puzzles & Cubes',
+    price: 145,
+    stock: 5,
+    barcode: '8902011',
+    image: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=400&auto=format&fit=crop&q=80',
+    active: true,
+  },
+  {
+    id: 'c0000001-0000-0000-0000-000000000012',
+    name: 'UNO card',
+    category: 'Card Games',
+    price: 39,
+    stock: 10,
+    barcode: '8902012',
+    image: 'https://images.unsplash.com/photo-1611195974226-a6a9be9dd763?w=400&auto=format&fit=crop&q=80',
+    active: true,
+  },
+  {
+    id: 'c0000001-0000-0000-0000-000000000013',
+    name: 'Gatling gun',
+    category: 'Weapons & Roleplay',
+    price: 75,
+    stock: 20,
+    barcode: '8902013',
+    image: 'https://images.unsplash.com/photo-1596704017254-9b121068fb31?w=400&auto=format&fit=crop&q=80',
+    active: true,
+  },
+  {
+    id: 'c0000001-0000-0000-0000-000000000014',
+    name: 'Keychain (₹58)',
+    category: 'Fashion & Keychain',
+    price: 58,
+    stock: 20,
+    barcode: '8902014',
+    image: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&auto=format&fit=crop&q=80',
+    active: true,
+  },
+  {
+    id: 'c0000001-0000-0000-0000-000000000015',
+    name: 'Spinner (₹58)',
+    category: 'Fidget & Sensory',
+    price: 58,
+    stock: 20,
+    barcode: '8902015',
+    image: 'https://images.unsplash.com/photo-1614036417651-efe5912149d8?w=400&auto=format&fit=crop&q=80',
+    active: true,
+  },
+  {
+    id: 'c0000001-0000-0000-0000-000000000016',
+    name: 'Keychain (₹68)',
+    category: 'Fashion & Keychain',
+    price: 68,
+    stock: 20,
+    barcode: '8902016',
+    image: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=400&auto=format&fit=crop&q=80',
+    active: true,
+  },
+  {
+    id: 'c0000001-0000-0000-0000-000000000017',
+    name: 'Pressure slime',
+    category: 'Slime & Dough',
+    price: 75,
+    stock: 24,
+    barcode: '8902017',
+    image: 'https://images.unsplash.com/photo-1533227268428-f9ed0900fb3b?w=400&auto=format&fit=crop&q=80',
+    active: true,
+  },
+  {
+    id: 'c0000001-0000-0000-0000-000000000018',
+    name: 'Gun Orbeez',
+    category: 'Weapons & Roleplay',
+    price: 78,
+    stock: 10,
+    barcode: '8902018',
+    image: 'https://images.unsplash.com/photo-1560963689-02e82017fb3c?w=400&auto=format&fit=crop&q=80',
+    active: true,
+  },
+  {
+    id: 'c0000001-0000-0000-0000-000000000019',
+    name: '2060 Grip',
+    category: 'Sports & Fitness',
+    price: 175,
+    stock: 3,
+    barcode: '8902019',
+    image: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=400&auto=format&fit=crop&q=80',
+    active: true,
+  },
+  {
+    id: 'c0000001-0000-0000-0000-000000000020',
+    name: 'Laser lite',
+    category: 'Novelty & Lights',
+    price: 30,
+    stock: 10,
+    barcode: '8902020',
+    image: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=400&auto=format&fit=crop&q=80',
+    active: true,
+  },
+  {
+    id: 'c0000001-0000-0000-0000-000000000021',
+    name: 'Camera',
+    category: 'Novelty & Roleplay',
+    price: 48,
+    stock: 20,
+    barcode: '8902021',
+    image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400&auto=format&fit=crop&q=80',
+    active: true,
+  },
+  {
+    id: 'c0000001-0000-0000-0000-000000000022',
+    name: 'Keychain (₹48)',
+    category: 'Fashion & Keychain',
+    price: 48,
+    stock: 20,
+    barcode: '8902022',
+    image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&auto=format&fit=crop&q=80',
+    active: true,
+  },
+  {
+    id: 'c0000001-0000-0000-0000-000000000023',
+    name: 'Metal car',
+    category: 'Die-cast & Vehicles',
+    price: 120,
+    stock: 20,
+    barcode: '8902023',
+    image: 'https://images.unsplash.com/photo-1594787318286-3d835c1d207f?w=400&auto=format&fit=crop&q=80',
+    active: true,
+  },
+  {
+    id: 'c0000001-0000-0000-0000-000000000024',
+    name: 'Music Gun',
+    category: 'Musical & Lights',
+    price: 390,
+    stock: 3,
+    barcode: '8902024',
+    image: 'https://images.unsplash.com/photo-1535572292336-fb6a8b5e9541?w=400&auto=format&fit=crop&q=80',
+    active: true,
+  },
+  {
+    id: 'c0000001-0000-0000-0000-000000000025',
+    name: 'Candy Flower',
+    category: 'Novelty & Candy',
+    price: 68,
+    stock: 10,
+    barcode: '8902025',
+    image: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?w=400&auto=format&fit=crop&q=80',
+    active: true,
+  },
+];
+
+async function reseed() {
+  console.log('🔄 Wiping old items and reseeding with 25 new exhibition toys...\n');
+
+  // 1. Wipe old transactions
+  await supabase.from('payments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  await supabase.from('inventory_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  await supabase.from('order_items').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  await supabase.from('orders').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  await supabase.from('token_counter').update({ last_token_number: 0 }).neq('last_token_number', -1);
+  console.log('✅ Cleaned transactions, logs, and reset token counter.');
+
+  // 2. Upsert all 25 new products (restores exact opening stock & prices)
+  const { data: upserted, error: upsertErr } = await supabase
+    .from('products')
+    .upsert(NEW_CATALOG, { onConflict: 'id' })
+    .select();
+
+  if (upsertErr) {
+    console.error('Failed to upsert products:', upsertErr);
+    process.exit(1);
+  }
+
+  // Also remove any obsolete products if any exist
+  const newIds = NEW_CATALOG.map((p) => p.id);
+  const { data: allProds } = await supabase.from('products').select('id, name');
+  const obsoleteIds = (allProds || []).filter((p) => !newIds.includes(p.id)).map((p) => p.id);
+  if (obsoleteIds.length > 0) {
+    await supabase.from('products').delete().in('id', obsoleteIds);
+    console.log(`✅ Removed ${obsoleteIds.length} obsolete products.`);
+  }
+
+  console.log(`\n🎉 Successfully initialized ${upserted?.length || 0} products in Supabase!`);
+  console.table(
+    upserted?.map((p, i) => ({
+      '#': i + 1,
+      Name: p.name,
+      Price: `₹${p.price}`,
+      Stock: `${p.stock} pcs`,
+      Barcode: p.barcode,
+    }))
+  );
+
+  process.exit(0);
+}
+
+reseed().catch((err) => {
+  console.error('Fatal error:', err);
+  process.exit(1);
+});

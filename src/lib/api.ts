@@ -18,10 +18,10 @@ const syncChannel =
 
 // LocalStorage persistence helpers for fallback mode
 const STORAGE_KEYS = {
-  PRODUCTS: 'pos_local_products_v2',
-  ORDERS: 'pos_local_orders_v2',
-  TOKEN_SEQ: 'pos_local_token_sequence_v2',
-  LOGS: 'pos_local_inventory_logs_v2',
+  PRODUCTS: 'pos_local_products_v4',
+  ORDERS: 'pos_local_orders_v4',
+  TOKEN_SEQ: 'pos_local_token_sequence_v4',
+  LOGS: 'pos_local_inventory_logs_v4',
 };
 
 function getLocalProducts(): Product[] {
@@ -34,7 +34,7 @@ function getLocalProducts(): Product[] {
     const parsed: Product[] = JSON.parse(data);
     // Sanitize: filter out any inactive products or test fixtures (like bilal or 9999 stock)
     const valid = parsed.filter((p) => p.name !== 'bilal' && p.active !== false && p.stock < 1000);
-    if (valid.length < 12) {
+    if (valid.length < 25) {
       localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(INITIAL_PRODUCTS));
       return INITIAL_PRODUCTS;
     }
@@ -397,17 +397,75 @@ export const api = {
     const supabase = getSupabaseClient();
     if (supabase) {
       try {
-        const { data, error } = await supabase.rpc('transition_order_status', {
-          p_order_id: payload.orderId,
-          p_target_status: payload.targetStatus,
-          p_staff_id: sanitizeUUID(payload.staffId),
-          p_notes: payload.notes || null,
-          p_payment_data: payload.payment || null,
-        });
+        // Fetch current order status to handle flexible transitions seamlessly
+        const { data: currentOrder } = await supabase
+          .from('orders')
+          .select('status, total_amount')
+          .eq('id', payload.orderId)
+          .single();
 
-        if (error) {
-          console.error('Supabase RPC transition_order_status error:', error);
-          throw error;
+        const currentStatus = currentOrder?.status || 'NEW';
+        const total = currentOrder?.total_amount || 0;
+        const paymentData = payload.payment || {
+          method: 'CASH',
+          amount: total,
+          cashAmount: total,
+          cashTendered: total,
+          changeReturned: 0,
+        };
+
+        if (payload.targetStatus === 'COMPLETED') {
+          // If NEW, step to ACCEPTED
+          if (currentStatus === 'NEW') {
+            await supabase.rpc('transition_order_status', {
+              p_order_id: payload.orderId,
+              p_target_status: 'ACCEPTED',
+              p_staff_id: sanitizeUUID(payload.staffId),
+              p_notes: payload.notes || null,
+            });
+          }
+          // If was NEW or ACCEPTED, step to PAID with payment details
+          if (currentStatus === 'NEW' || currentStatus === 'ACCEPTED') {
+            await supabase.rpc('transition_order_status', {
+              p_order_id: payload.orderId,
+              p_target_status: 'PAID',
+              p_staff_id: sanitizeUUID(payload.staffId),
+              p_payment_data: paymentData,
+            });
+          }
+          // Now execute COMPLETED (which triggers atomic inventory deduction in PostgreSQL)
+          const { error: compErr } = await supabase.rpc('transition_order_status', {
+            p_order_id: payload.orderId,
+            p_target_status: 'COMPLETED',
+            p_staff_id: sanitizeUUID(payload.staffId),
+            p_notes: payload.notes || null,
+          });
+          if (compErr) throw compErr;
+        } else if (payload.targetStatus === 'PAID') {
+          if (currentStatus === 'NEW') {
+            await supabase.rpc('transition_order_status', {
+              p_order_id: payload.orderId,
+              p_target_status: 'ACCEPTED',
+              p_staff_id: sanitizeUUID(payload.staffId),
+            });
+          }
+          const { error: paidErr } = await supabase.rpc('transition_order_status', {
+            p_order_id: payload.orderId,
+            p_target_status: 'PAID',
+            p_staff_id: sanitizeUUID(payload.staffId),
+            p_payment_data: paymentData,
+          });
+          if (paidErr) throw paidErr;
+        } else {
+          // Normal transition (e.g. ACCEPTED or VOID)
+          const { error } = await supabase.rpc('transition_order_status', {
+            p_order_id: payload.orderId,
+            p_target_status: payload.targetStatus,
+            p_staff_id: sanitizeUUID(payload.staffId),
+            p_notes: payload.notes || null,
+            p_payment_data: payload.payment || null,
+          });
+          if (error) throw error;
         }
 
         // Fetch refreshed order
@@ -437,42 +495,54 @@ export const api = {
 
     const updatedOrders = orders.map((o) => {
       if (o.id === payload.orderId) {
-        // Enforce state machine transitions
+        // Enforce state machine transitions (locked once COMPLETED or VOID)
         if (o.status === 'COMPLETED' || o.status === 'VOID') {
           throw new Error(`Order ${o.token_number} is locked in status ${o.status}`);
-        }
-        if (payload.targetStatus === 'ACCEPTED' && o.status !== 'NEW') {
-          throw new Error('Can only accept NEW orders');
-        }
-        if (payload.targetStatus === 'PAID' && o.status !== 'ACCEPTED') {
-          throw new Error('Can only pay ACCEPTED orders');
-        }
-        if (payload.targetStatus === 'COMPLETED' && o.status !== 'PAID') {
-          throw new Error('Can only complete PAID orders');
         }
 
         const next: Order = {
           ...o,
           status: payload.targetStatus,
           updated_at: nowIso,
-          accepted_at: payload.targetStatus === 'ACCEPTED' ? nowIso : o.accepted_at,
-          paid_at: payload.targetStatus === 'PAID' ? nowIso : o.paid_at,
+          accepted_at:
+            payload.targetStatus === 'ACCEPTED' ||
+            payload.targetStatus === 'PAID' ||
+            payload.targetStatus === 'COMPLETED'
+              ? o.accepted_at || nowIso
+              : o.accepted_at,
+          paid_at:
+            payload.targetStatus === 'PAID' || payload.targetStatus === 'COMPLETED'
+              ? o.paid_at || nowIso
+              : o.paid_at,
           completed_at: payload.targetStatus === 'COMPLETED' ? nowIso : o.completed_at,
         };
 
-        if (payload.payment) {
+        const paymentRecord = payload.payment || {
+          method: 'CASH',
+          amount: o.total_amount,
+          cashTendered: o.total_amount,
+          changeReturned: 0,
+          cashAmount: o.total_amount,
+          upiAmount: 0,
+        };
+
+        if (
+          payload.payment ||
+          payload.targetStatus === 'PAID' ||
+          payload.targetStatus === 'COMPLETED'
+        ) {
           next.payments = [
             ...(o.payments || []),
             {
               id: `pay-${Date.now()}`,
               order_id: o.id,
-              payment_method: payload.payment.method,
-              amount: payload.payment.amount,
-              cash_tendered: payload.payment.cashTendered,
-              change_returned: payload.payment.changeReturned,
-              cash_amount: payload.payment.cashAmount,
-              upi_amount: payload.payment.upiAmount,
-              transaction_reference: payload.payment.transactionReference,
+              payment_method: paymentRecord.method,
+              amount: paymentRecord.amount,
+              cash_tendered: paymentRecord.cashTendered,
+              change_returned: paymentRecord.changeReturned,
+              cash_amount: paymentRecord.cashAmount,
+              upi_amount: paymentRecord.upiAmount,
+              transaction_reference: paymentRecord.transactionReference || undefined,
               status: 'SUCCESS',
               staff_id: payload.staffId,
               staff_name: payload.staffName,
@@ -493,7 +563,9 @@ export const api = {
       const products = getLocalProducts();
       const updatedProducts = products.map((p) => {
         const matchedItem = order.items?.find(
-          (item) => item.product_id === p.id || item.product_name?.toLowerCase() === p.name?.toLowerCase()
+          (item) =>
+            item.product_id === p.id ||
+            item.product_name?.toLowerCase() === p.name?.toLowerCase()
         );
         if (matchedItem) {
           const newStock = Math.max(0, p.stock - matchedItem.quantity);

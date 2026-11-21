@@ -51,16 +51,17 @@ export const ReportsPage: React.FC = () => {
 
       ord.items?.forEach((item) => {
         totalProductsSold += item.quantity;
-        if (!productSalesMap[item.product_id]) {
-          productSalesMap[item.product_id] = {
+        const key = item.product_name || item.product_id;
+        if (!productSalesMap[key]) {
+          productSalesMap[key] = {
             name: item.product_name,
             quantity: 0,
             revenue: 0,
             image: item.image,
           };
         }
-        productSalesMap[item.product_id].quantity += item.quantity;
-        productSalesMap[item.product_id].revenue += item.subtotal;
+        productSalesMap[key].quantity += item.quantity;
+        productSalesMap[key].revenue += item.subtotal;
       });
     });
 

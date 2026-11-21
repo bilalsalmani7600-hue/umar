@@ -120,10 +120,10 @@ function initRealtimeChannel() {
   }
 }
 
-// Helper to ensure only valid UUID strings reach Postgres UUID columns
+// Helper to ensure valid UUID strings reach Postgres UUID columns
 function isValidUUID(val?: string | null): boolean {
   if (!val) return false;
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(val);
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
 }
 
 function sanitizeUUID(val?: string | null): string | null {
@@ -297,12 +297,14 @@ export const api = {
     if (supabase) {
       try {
         // Sanitize product UUIDs and staff UUIDs so Postgres 22P02 invalid UUID error never occurs
-        const sanitizedItems = payload.items.map((i, idx) => {
+        const sanitizedItems = payload.items.map((i) => {
           let pid = sanitizeUUID(i.product_id);
           if (!pid) {
-            // Map fallback index to exhibition product UUID
-            const fallbackNum = ((idx % 12) + 1).toString().padStart(12, '0');
-            pid = `c0000001-0000-0000-0000-${fallbackNum}`;
+            // Find by product name in official catalog
+            const matched = INITIAL_PRODUCTS.find(
+              (p) => p.name.toLowerCase() === (i.product_name || '').toLowerCase()
+            );
+            pid = matched?.id || 'c0000001-0000-0000-0000-000000000001';
           }
           return {
             ...i,

@@ -15,6 +15,8 @@ import {
   Check,
   CheckCircle2,
   Tag,
+  Banknote,
+  QrCode,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -29,7 +31,7 @@ interface MobilePOSViewProps {
   onClearCart: () => void;
   getItemQuantity: (productId: string) => number;
   onGenerateToken: () => void;
-  onInstantCheckout?: () => void;
+  onInstantCheckout?: (method: 'CASH' | 'UPI') => void;
   isGenerating: boolean;
   recentOrders: Order[];
   onOpenReceipt: () => void;
@@ -413,20 +415,37 @@ export const MobilePOSView: React.FC<MobilePOSViewProps> = ({
             </button>
 
             {onInstantCheckout && (
-              <button
-                type="button"
-                onClick={onInstantCheckout}
-                disabled={cartItems.length === 0 || isGenerating}
-                className={cn(
-                  'w-full h-11 rounded-xl font-black text-sm flex items-center justify-center gap-2 shadow-sm transition-all select-none',
-                  cartItems.length === 0 || isGenerating
-                    ? 'bg-stone-200 dark:bg-zinc-800/50 text-stone-400 cursor-not-allowed'
-                    : 'bg-emerald-600 hover:bg-emerald-500 text-white active:scale-98'
-                )}
-              >
-                <CheckCircle2 className="h-4 w-4" />
-                <span>⚡ Instant Cash Sale (Deduct Stock)</span>
-              </button>
+              <div className="grid grid-cols-2 gap-2 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => onInstantCheckout('CASH')}
+                  disabled={cartItems.length === 0 || isGenerating}
+                  className={cn(
+                    'h-11 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-sm transition-all select-none',
+                    cartItems.length === 0 || isGenerating
+                      ? 'bg-stone-200 dark:bg-zinc-800/50 text-stone-400 cursor-not-allowed'
+                      : 'bg-emerald-600 hover:bg-emerald-500 text-white active:scale-98'
+                  )}
+                >
+                  <Banknote className="h-4 w-4" />
+                  <span>💵 Cash Sale</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onInstantCheckout('UPI')}
+                  disabled={cartItems.length === 0 || isGenerating}
+                  className={cn(
+                    'h-11 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-sm transition-all select-none',
+                    cartItems.length === 0 || isGenerating
+                      ? 'bg-stone-200 dark:bg-zinc-800/50 text-stone-400 cursor-not-allowed'
+                      : 'bg-sky-600 hover:bg-sky-500 text-white active:scale-98'
+                  )}
+                >
+                  <QrCode className="h-4 w-4" />
+                  <span>📱 UPI Sale</span>
+                </button>
+              </div>
             )}
           </div>
         </div>

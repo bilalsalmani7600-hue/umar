@@ -101,10 +101,10 @@ export const OrdersPage: React.FC = () => {
           </div>
 
           {/* Orders Table */}
-          <div className="rounded-2xl border border-border bg-card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-muted/50 border-b border-border font-black text-muted-foreground uppercase tracking-wider">
+          <div className="rounded-2xl border border-border bg-card flex flex-col min-h-0 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto overflow-y-auto max-h-[65vh]">
+              <table className="w-full text-left text-xs relative">
+                <thead className="bg-muted/95 backdrop-blur-md border-b border-border font-black text-muted-foreground uppercase tracking-wider sticky top-0 z-10 shadow-xs">
                   <tr>
                     <th className="py-3 px-4">Token</th>
                     <th className="py-3 px-4">Time</th>

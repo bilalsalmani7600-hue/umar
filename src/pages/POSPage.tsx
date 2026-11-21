@@ -93,8 +93,8 @@ export const POSPage: React.FC = () => {
     }
   };
 
-  // Handle Instant Cash Sale (Creates order and immediately completes + deducts stock)
-  const handleInstantCheckout = async () => {
+  // Handle Instant Sale (Creates order and immediately completes + deducts stock with Cash or UPI)
+  const handleInstantCheckout = async (paymentMethod: 'CASH' | 'UPI' = 'CASH') => {
     if (items.length === 0 || isCreating) return;
 
     try {
@@ -114,18 +114,28 @@ export const POSPage: React.FC = () => {
 
       const order = await createOrder(payload);
       if (order?.id) {
+        const paymentData =
+          paymentMethod === 'CASH'
+            ? {
+                method: 'CASH' as const,
+                amount: order.total_amount,
+                cashAmount: order.total_amount,
+                cashTendered: order.total_amount,
+                changeReturned: 0,
+              }
+            : {
+                method: 'UPI' as const,
+                amount: order.total_amount,
+                upiAmount: order.total_amount,
+                transactionReference: `UPI-${Date.now().toString().slice(-6)}`,
+              };
+
         await transitionOrder({
           orderId: order.id,
           targetStatus: 'COMPLETED',
           staffId: currentUser.id,
           staffName: currentUser.name,
-          payment: {
-            method: 'CASH',
-            amount: order.total_amount,
-            cashAmount: order.total_amount,
-            cashTendered: order.total_amount,
-            changeReturned: 0,
-          },
+          payment: paymentData,
         });
       }
       setGeneratedOrder(order);
@@ -239,6 +249,7 @@ export const POSPage: React.FC = () => {
             <div className="flex flex-col w-80 xl:w-96 shrink-0 h-full min-h-0 overflow-hidden">
               <CartSidebar
                 onGenerateToken={handleGenerateToken}
+                onInstantCheckout={handleInstantCheckout}
                 isGenerating={isCreating}
               />
             </div>

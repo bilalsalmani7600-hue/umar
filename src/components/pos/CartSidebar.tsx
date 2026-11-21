@@ -2,15 +2,17 @@ import React from 'react';
 import { useCart } from '@/context/CartContext';
 import { useOrders } from '@/hooks/useOrders';
 import { formatCurrency, cn } from '@/lib/utils';
-import { Minus, Plus, Trash2, Tag, ShoppingBag, X } from 'lucide-react';
+import { Minus, Plus, Trash2, Tag, ShoppingBag, X, Banknote, QrCode } from 'lucide-react';
 
 interface CartSidebarProps {
   onGenerateToken: () => void;
+  onInstantCheckout?: (method: 'CASH' | 'UPI') => void;
   isGenerating?: boolean;
 }
 
 export const CartSidebar: React.FC<CartSidebarProps> = ({
   onGenerateToken,
+  onInstantCheckout,
   isGenerating,
 }) => {
   const { items, clearCart, updateQuantity, decrementQuantity, removeFromCart, totalAmount, totalItems } = useCart();
@@ -129,15 +131,49 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
           disabled={items.length === 0 || isGenerating}
           onClick={onGenerateToken}
           className={cn(
-            'w-full h-12 py-3 px-4 rounded-xl flex items-center justify-center gap-2 font-black text-sm sm:text-base shadow-lg transition-all active:scale-[0.98]',
+            'w-full h-11 py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 font-black text-sm shadow-md transition-all active:scale-[0.98]',
             items.length === 0
               ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-60'
               : 'bg-brand text-white hover:bg-brand-700 active:bg-brand-800'
           )}
         >
-          <Tag className="h-5 w-5" />
+          <Tag className="h-4.5 w-4.5" />
           <span>{isGenerating ? 'Generating...' : 'Generate Token (F3)'}</span>
         </button>
+
+        {onInstantCheckout && (
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            <button
+              type="button"
+              disabled={items.length === 0 || isGenerating}
+              onClick={() => onInstantCheckout('CASH')}
+              className={cn(
+                'h-10 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all select-none',
+                items.length === 0 || isGenerating
+                  ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-60'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white active:scale-98'
+              )}
+            >
+              <Banknote className="h-4 w-4" />
+              <span>💵 Cash Sale</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={items.length === 0 || isGenerating}
+              onClick={() => onInstantCheckout('UPI')}
+              className={cn(
+                'h-10 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all select-none',
+                items.length === 0 || isGenerating
+                  ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-60'
+                  : 'bg-sky-600 hover:bg-sky-500 text-white active:scale-98'
+              )}
+            >
+              <QrCode className="h-4 w-4" />
+              <span>📱 UPI Sale</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Live Tokens Section (matching Screenshot 1 bottom) */}

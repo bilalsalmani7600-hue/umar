@@ -12,6 +12,8 @@ import {
   Check,
   Lock,
   ArrowRight,
+  Banknote,
+  QrCode,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -160,53 +162,86 @@ export const OrderDetailsView: React.FC<OrderDetailsViewProps> = ({
           </div>
 
           {/* DYNAMIC ACTION BUTTONS ACCORDING TO STATE MACHINE */}
-          {/* STATE 1 & 2: NEW or ACCEPTED -> 1-Tap Approve & Complete */}
+          {/* STATE 1 & 2: NEW or ACCEPTED -> Ask CASH or UPI & 1-Tap Approve */}
           {(isNew || isAccepted) && (
             <div className="space-y-2">
-              <div className="flex gap-2">
+              <div className="text-[11px] font-black uppercase tracking-wider text-muted-foreground">
+                Payment Method (Tap to Approve & Deduct Stock):
+              </div>
+
+              {/* Instant 1-Tap Cash or UPI Buttons */}
+              <div className="grid grid-cols-2 gap-2">
                 <Button
-                  onClick={() => onComplete(order.id)}
+                  onClick={async () => {
+                    await onPaymentConfirm(order.id, {
+                      method: 'CASH',
+                      amount: order.total_amount,
+                      cashTendered: order.total_amount,
+                      changeReturned: 0,
+                      cashAmount: order.total_amount,
+                    });
+                    await onComplete(order.id);
+                  }}
                   disabled={isProcessing}
-                  variant="success"
-                  className="flex-1 h-12 rounded-xl text-xs sm:text-sm font-black shadow-lg flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white"
+                  className="h-12 sm:h-13 rounded-xl text-xs sm:text-sm font-black shadow-lg flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white active:scale-95 transition-all"
                 >
-                  <CheckCircle2 className="h-4.5 w-4.5" />
-                  <span>1-Tap Approve & Deduct Stock</span>
+                  <Banknote className="h-5 w-5" />
+                  <span>💵 Cash (Approve)</span>
+                </Button>
+
+                <Button
+                  onClick={async () => {
+                    await onPaymentConfirm(order.id, {
+                      method: 'UPI',
+                      amount: order.total_amount,
+                      upiAmount: order.total_amount,
+                      transactionReference: `UPI-${Date.now().toString().slice(-6)}`,
+                    });
+                    await onComplete(order.id);
+                  }}
+                  disabled={isProcessing}
+                  className="h-12 sm:h-13 rounded-xl text-xs sm:text-sm font-black shadow-lg flex items-center justify-center gap-2 bg-sky-600 hover:bg-sky-500 text-white active:scale-95 transition-all"
+                >
+                  <QrCode className="h-5 w-5" />
+                  <span>📱 UPI (Approve)</span>
+                </Button>
+              </div>
+
+              {/* Cancel and Split/Custom Options */}
+              <div className="flex gap-2 pt-0.5">
+                <Button
+                  type="button"
+                  onClick={() => setShowPaymentDetails(!showPaymentDetails)}
+                  variant="outline"
+                  className="flex-1 h-9 rounded-xl text-xs font-bold border-dashed"
+                >
+                  {showPaymentDetails ? '▲ Hide Custom Options' : '▼ Split / Custom Tender'}
                 </Button>
 
                 <Button
                   onClick={() => onVoid(order.id)}
                   disabled={isProcessing}
                   variant="destructive"
-                  className="px-3.5 sm:px-4 h-12 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-red-600 hover:bg-red-500 text-white"
+                  className="px-4 h-9 rounded-xl font-bold text-xs bg-red-600 hover:bg-red-500 text-white shrink-0"
                 >
-                  <XCircle className="h-4.5 w-4.5" />
+                  <XCircle className="h-3.5 w-3.5 mr-1" />
                   <span>Cancel</span>
                 </Button>
               </div>
 
-              {/* Collapsible custom UPI payment option */}
-              <div className="pt-0.5">
-                <button
-                  type="button"
-                  onClick={() => setShowPaymentDetails(!showPaymentDetails)}
-                  className="w-full text-center text-xs font-semibold text-muted-foreground hover:text-foreground py-1"
-                >
-                  {showPaymentDetails ? '▲ Hide Custom Payment' : '▼ Or Record UPI / Split Payment'}
-                </button>
-                {showPaymentDetails && (
-                  <div className="mt-2">
-                    <PaymentSection
-                      totalAmount={order.total_amount}
-                      isProcessing={isProcessing}
-                      onConfirmPayment={async (paymentData) => {
-                        await onPaymentConfirm(order.id, paymentData);
-                        await onComplete(order.id);
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
+              {/* Collapsible custom UPI / Split payment options */}
+              {showPaymentDetails && (
+                <div className="mt-2">
+                  <PaymentSection
+                    totalAmount={order.total_amount}
+                    isProcessing={isProcessing}
+                    onConfirmPayment={async (paymentData) => {
+                      await onPaymentConfirm(order.id, paymentData);
+                      await onComplete(order.id);
+                    }}
+                  />
+                </div>
+              )}
             </div>
           )}
 

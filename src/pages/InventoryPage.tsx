@@ -177,7 +177,7 @@ export const InventoryPage: React.FC = () => {
       <div className="flex-1 flex overflow-hidden min-h-0 w-full">
         <Sidebar />
 
-        <main className="flex-1 flex flex-col overflow-y-auto p-4 sm:p-6 gap-4 min-h-0">
+        <main className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden p-4 sm:p-6 gap-4 min-h-0 h-full scroll-smooth">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
@@ -271,7 +271,7 @@ export const InventoryPage: React.FC = () => {
               />
             </div>
 
-            <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar w-full sm:w-auto pb-1 sm:pb-0">
               <button
                 type="button"
                 onClick={() => setCategoryFilter('All')}
@@ -302,11 +302,11 @@ export const InventoryPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Product Inventory Table */}
-          <div className="rounded-2xl border border-border bg-card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-muted/50 border-b border-border font-black text-muted-foreground uppercase tracking-wider">
+          {/* Product Inventory Table (Guaranteed Smooth Scrolling with Sticky Header) */}
+          <div className="rounded-2xl border border-border bg-card flex flex-col min-h-0 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto overflow-y-auto max-h-[58vh] sm:max-h-[66vh]">
+              <table className="w-full text-left text-xs relative">
+                <thead className="bg-muted/95 backdrop-blur-md border-b border-border font-black text-muted-foreground uppercase tracking-wider sticky top-0 z-10 shadow-xs">
                   <tr>
                     <th className="py-3 px-4">Toy</th>
                     <th className="py-3 px-4">Category</th>

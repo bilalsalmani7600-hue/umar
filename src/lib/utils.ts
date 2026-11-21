@@ -61,7 +61,8 @@ export function downloadCSV(filename: string, rows: Record<string, any>[]) {
     ),
   ].join('\r\n');
 
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  // Add UTF-8 BOM (\uFEFF) so Excel opens CSV with proper encoding for symbols like ₹
+  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.setAttribute('href', url);
@@ -69,5 +70,6 @@ export function downloadCSV(filename: string, rows: Record<string, any>[]) {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 

@@ -5,7 +5,8 @@ import { Sidebar } from '@/components/common/Sidebar';
 import { ThermalReceiptModal } from '@/components/common/ThermalReceiptModal';
 import { Order, OrderStatus } from '@/lib/types';
 import { formatCurrency, formatTimeAgo, formatClockTime, downloadCSV, cn } from '@/lib/utils';
-import { FileText, Download, Printer, Search, CheckCircle2, Clock, XCircle, ArrowUpDown } from 'lucide-react';
+import { exportStyledOrdersReport } from '@/lib/excelExport';
+import { FileText, Download, Printer, Search, CheckCircle2, Clock, XCircle, ArrowUpDown, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export const OrdersPage: React.FC = () => {
@@ -40,6 +41,10 @@ export const OrdersPage: React.FC = () => {
     downloadCSV('exhibition_orders', rows);
   };
 
+  const handleExportExcel = () => {
+    exportStyledOrdersReport(filteredOrders);
+  };
+
   return (
     <div className="h-screen max-h-screen w-full flex flex-col bg-background text-foreground overflow-hidden">
       <Navbar />
@@ -59,13 +64,21 @@ export const OrdersPage: React.FC = () => {
               </p>
             </div>
 
-            <Button
-              onClick={handleExportCSV}
-              variant="outline"
-              className="h-10 px-4 rounded-xl font-bold flex items-center gap-2"
-            >
-              <Download className="h-4 w-4" /> Export CSV
-            </Button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                onClick={handleExportExcel}
+                className="h-10 px-3.5 rounded-xl font-black flex items-center gap-1.5 shadow-md bg-emerald-600 hover:bg-emerald-500 text-white"
+              >
+                <FileSpreadsheet className="h-4 w-4" /> Full Color Excel (.xls)
+              </Button>
+              <Button
+                onClick={handleExportCSV}
+                variant="outline"
+                className="h-10 px-3.5 rounded-xl font-bold flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" /> CSV File
+              </Button>
+            </div>
           </div>
 
           {/* Filter Bar */}

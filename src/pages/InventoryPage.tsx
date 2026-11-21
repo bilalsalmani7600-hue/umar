@@ -4,6 +4,7 @@ import { Navbar } from '@/components/common/Navbar';
 import { Sidebar } from '@/components/common/Sidebar';
 import { Product } from '@/lib/types';
 import { formatCurrency, downloadCSV, cn } from '@/lib/utils';
+import { exportStyledInventoryReport } from '@/lib/excelExport';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { compressImageFile } from '@/lib/imageCompressor';
@@ -18,6 +19,7 @@ import {
   ArrowUpRight,
   Camera,
   Upload,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 export const InventoryPage: React.FC = () => {
@@ -154,20 +156,24 @@ export const InventoryPage: React.FC = () => {
       const margin = p.price > 0 ? Math.round((profit / p.price) * 100) : 0;
       return {
         ID: p.id,
-        Name: p.name,
+        Toy_Name: p.name,
         Category: p.category,
-        Stock: p.stock,
-        Status: p.stock > 0 ? 'In Stock' : 'Out of Stock',
-        Real_Cost: cost,
-        Selling_Price: p.price,
-        Profit_Per_Unit: profit,
-        Margin_Percent: `${margin}%`,
-        Total_Stock_Cost: p.stock * cost,
-        Total_Stock_Retail: p.stock * p.price,
-        Barcode: p.barcode || '',
+        Current_Stock: p.stock,
+        Stock_Status: p.stock > 0 ? (p.stock <= 5 ? 'Low Stock' : 'In Stock') : 'Out of Stock',
+        Wholesale_Cost_INR: cost,
+        Selling_Price_INR: p.price,
+        Profit_Per_Piece_INR: profit,
+        Profit_Margin_Pct: `${margin}%`,
+        Total_Capital_Cost_INR: p.stock * cost,
+        Total_Retail_Value_INR: p.stock * p.price,
+        Barcode_SKU: p.barcode || '',
       };
     });
     downloadCSV('toy_inventory_with_margins', rows);
+  };
+
+  const handleExportExcel = () => {
+    exportStyledInventoryReport(products);
   };
 
   return (
@@ -189,13 +195,19 @@ export const InventoryPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                onClick={handleExportExcel}
+                className="h-10 px-3.5 rounded-xl font-black flex items-center gap-1.5 shadow-md bg-emerald-600 hover:bg-emerald-500 text-white"
+              >
+                <FileSpreadsheet className="h-4 w-4" /> Full Color Excel (.xls)
+              </Button>
               <Button
                 onClick={handleExportCSV}
                 variant="outline"
-                className="h-10 px-3.5 rounded-xl font-bold flex items-center gap-1.5"
+                className="h-10 px-3 rounded-xl font-bold flex items-center gap-1.5"
               >
-                <Download className="h-4 w-4" /> Export CSV
+                <Download className="h-4 w-4" /> CSV File
               </Button>
               <Button
                 onClick={handleOpenAdd}

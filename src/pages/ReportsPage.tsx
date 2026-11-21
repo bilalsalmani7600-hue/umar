@@ -6,6 +6,7 @@ import { Sidebar } from '@/components/common/Sidebar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { formatCurrency, downloadCSV, formatClockTime } from '@/lib/utils';
+import { exportStyledSalesReport } from '@/lib/excelExport';
 import {
   PieChart,
   IndianRupee,
@@ -18,6 +19,7 @@ import {
   CheckCircle2,
   Wallet,
   Percent,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 export const ReportsPage: React.FC = () => {
@@ -130,12 +132,16 @@ export const ReportsPage: React.FC = () => {
       Rank: idx + 1,
       Toy_Name: t.name,
       Units_Sold: t.quantity,
-      Revenue_Generated: t.revenue,
-      Wholesale_Cost: t.cost,
-      Net_Profit: t.profit,
+      Wholesale_Cost_INR: t.cost,
+      Gross_Revenue_INR: t.revenue,
+      Net_Profit_INR: t.profit,
       Profit_Margin_Pct: t.revenue > 0 ? `${Math.round((t.profit / t.revenue) * 100)}%` : '0%',
     }));
     downloadCSV('exhibition_toy_sales_report', rows);
+  };
+
+  const handleExportExcel = () => {
+    exportStyledSalesReport(metrics, orders);
   };
 
   return (
@@ -153,24 +159,30 @@ export const ReportsPage: React.FC = () => {
                 <PieChart className="h-5 w-5 text-brand" /> Exhibition Sales & Analytics
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Real-time financial performance and toy movement metrics
+                Real-time financial performance, profit margins, and toy sales audit
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Button
                 onClick={() => setShowZReport(true)}
                 variant="outline"
-                className="h-10 px-4 rounded-xl font-bold flex items-center gap-1.5"
+                className="h-10 px-3.5 rounded-xl font-bold flex items-center gap-1.5"
               >
                 <Printer className="h-4 w-4" /> Day-End Z-Report
               </Button>
               <Button
-                onClick={handleExportCSV}
-                variant="default"
-                className="h-10 px-4 rounded-xl font-bold flex items-center gap-1.5 shadow-md"
+                onClick={handleExportExcel}
+                className="h-10 px-4 rounded-xl font-black flex items-center gap-1.5 shadow-md bg-emerald-600 hover:bg-emerald-500 text-white"
               >
-                <Download className="h-4 w-4" /> Download Sales CSV
+                <FileSpreadsheet className="h-4.5 w-4.5" /> Full Color Excel (.xls)
+              </Button>
+              <Button
+                onClick={handleExportCSV}
+                variant="outline"
+                className="h-10 px-3.5 rounded-xl font-bold flex items-center gap-1.5"
+              >
+                <Download className="h-4 w-4" /> CSV File
               </Button>
             </div>
           </div>

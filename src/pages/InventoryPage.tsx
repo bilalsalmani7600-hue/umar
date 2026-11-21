@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useProducts } from '@/hooks/useProducts';
 import { Navbar } from '@/components/common/Navbar';
 import { Sidebar } from '@/components/common/Sidebar';
@@ -6,6 +6,7 @@ import { Product } from '@/lib/types';
 import { formatCurrency, downloadCSV, cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { compressImageFile } from '@/lib/imageCompressor';
 import {
   Package,
   Plus,
@@ -15,6 +16,8 @@ import {
   Search,
   AlertTriangle,
   ArrowUpRight,
+  Camera,
+  Upload,
 } from 'lucide-react';
 
 export const InventoryPage: React.FC = () => {
@@ -33,6 +36,28 @@ export const InventoryPage: React.FC = () => {
   const [formStock, setFormStock] = useState<number>(20);
   const [formImage, setFormImage] = useState<string>('');
   const [formBarcode, setFormBarcode] = useState<string>('');
+  const [isCompressing, setIsCompressing] = useState<boolean>(false);
+  const [showManualUrl, setShowManualUrl] = useState<boolean>(false);
+
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsCompressing(true);
+      const compressedDataUrl = await compressImageFile(file, 480, 0.82);
+      setFormImage(compressedDataUrl);
+    } catch (err) {
+      console.error('Failed to process image:', err);
+    } finally {
+      setIsCompressing(false);
+      // Reset input value so same file can be selected again if needed
+      e.target.value = '';
+    }
+  };
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -418,17 +443,99 @@ export const InventoryPage: React.FC = () => {
               </div>
             </div>
 
-            <div>
-              <label className="text-xs font-bold text-muted-foreground block mb-1">
-                Image URL:
+            {/* Toy Photo / Camera Capture Section */}
+            <div className="space-y-2 p-3 rounded-2xl bg-muted/30 border border-border">
+              <label className="text-xs font-bold text-foreground block">
+                Toy Photo (Mobile Camera / Upload):
               </label>
-              <input
-                type="url"
-                required
-                value={formImage}
-                onChange={(e) => setFormImage(e.target.value)}
-                className="w-full h-10 px-3 rounded-xl border border-input bg-background text-xs font-mono focus:ring-2 focus:ring-brand focus:outline-none"
-              />
+
+              <div className="flex items-center gap-3">
+                {/* Photo Preview Thumbnail */}
+                <div className="relative h-20 w-20 rounded-xl bg-card border-2 border-dashed border-border overflow-hidden shrink-0 flex items-center justify-center">
+                  {formImage ? (
+                    <img
+                      src={formImage}
+                      alt="Toy preview"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <Camera className="h-7 w-7 text-muted-foreground opacity-50" />
+                  )}
+                  {isCompressing && (
+                    <div className="absolute inset-0 bg-black/70 flex items-center justify-center text-[10px] text-white font-bold animate-pulse text-center p-1 leading-tight">
+                      Compressing...
+                    </div>
+                  )}
+                </div>
+
+                {/* Camera & File Buttons */}
+                <div className="flex-1 space-y-1.5">
+                  {/* Hidden file inputs: one with capture for direct camera, one for gallery */}
+                  <input
+                    ref={cameraInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleImageFileChange}
+                    className="hidden"
+                  />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageFileChange}
+                    className="hidden"
+                  />
+
+                  <div className="flex gap-2">
+                    {/* Take Photo button (triggers rear camera directly on phone) */}
+                    <Button
+                      type="button"
+                      variant="default"
+                      size="sm"
+                      onClick={() => cameraInputRef.current?.click()}
+                      disabled={isCompressing}
+                      className="flex-1 h-9 rounded-xl text-xs font-black bg-brand hover:bg-brand/90 text-white flex items-center justify-center gap-1.5 shadow-sm"
+                    >
+                      <Camera className="h-4 w-4" />
+                      <span>Take Photo</span>
+                    </Button>
+
+                    {/* Choose from gallery button */}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isCompressing}
+                      className="flex-1 h-9 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5"
+                    >
+                      <Upload className="h-3.5 w-3.5" />
+                      <span>Gallery</span>
+                    </Button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowManualUrl(!showManualUrl)}
+                    className="text-[11px] font-bold text-muted-foreground hover:text-foreground inline-block pt-0.5"
+                  >
+                    {showManualUrl ? '▲ Hide URL input' : '▼ Or paste image URL'}
+                  </button>
+                </div>
+              </div>
+
+              {showManualUrl && (
+                <div className="pt-1">
+                  <input
+                    type="url"
+                    placeholder="https://images.unsplash.com/..."
+                    value={formImage}
+                    onChange={(e) => setFormImage(e.target.value)}
+                    className="w-full h-8 px-2.5 rounded-lg border border-input bg-background text-xs font-mono focus:ring-1 focus:ring-brand focus:outline-none"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="pt-2 flex justify-end gap-2">

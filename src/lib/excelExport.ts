@@ -38,28 +38,22 @@ function buildExcelDocument(title: string, bodyContent: string): string {
       margin: 0;
       padding: 16px;
     }
-    .header-banner {
-      background-color: #7A1D24;
-      color: #ffffff;
-      padding: 16px;
-      font-size: 16pt;
-      font-weight: bold;
-      text-align: center;
-      border: 1px solid #5C151B;
-    }
-    .sub-banner {
-      background-color: #4A1116;
-      color: #fce7e8;
-      font-size: 9.5pt;
-      padding: 6px;
-      text-align: center;
-      border: 1px solid #360B0F;
-    }
-    .section-title {
-      font-size: 12pt;
+    .report-title {
+      font-size: 15pt;
       font-weight: bold;
       color: #0f172a;
-      padding-top: 14px;
+      margin-bottom: 2px;
+    }
+    .report-meta {
+      font-size: 9pt;
+      color: #64748b;
+      margin-bottom: 14px;
+    }
+    .section-title {
+      font-size: 11pt;
+      font-weight: bold;
+      color: #0f172a;
+      padding-top: 10px;
       padding-bottom: 6px;
     }
     .kpi-table {
@@ -251,13 +245,12 @@ export function exportStyledSalesReport(metrics: {
   const timestamp = new Date().toLocaleString();
 
   let body = `
-    <!-- Top Branding Banner -->
-    <div class="header-banner">🧸 TOY STALL POS - EXHIBITION SALES AUDIT & FINANCIAL REPORT</div>
-    <div class="sub-banner">Live Audit Generated on ${timestamp} • Exhibition Sales Tracking</div>
-    <br/>
+    <!-- Clean Professional Title -->
+    <div class="report-title">Exhibition Sales & Profit Audit Report</div>
+    <div class="report-meta">Generated on ${timestamp} • Exhibition Sales Tracking</div>
 
     <!-- Executive Financial KPI Summary -->
-    <div class="section-title">📊 Executive Financial Summary</div>
+    <div class="section-title">Executive Financial Summary</div>
     <table class="kpi-table">
       <tr>
         <td class="kpi-card" width="20%">
@@ -290,7 +283,7 @@ export function exportStyledSalesReport(metrics: {
     <br/>
 
     <!-- Section 1: Top Toys Sales & Profit Ranking -->
-    <div class="section-title">🏆 Toy Sales & Net Profit Performance Ranking</div>
+    <div class="section-title">Toy Sales & Net Profit Performance Ranking</div>
     <table class="data-table">
       <thead>
         <tr>
@@ -350,7 +343,7 @@ export function exportStyledSalesReport(metrics: {
     <br/><br/>
 
     <!-- Section 2: Complete Orders Transaction Ledger -->
-    <div class="section-title">📋 Complete Exhibition Order Log</div>
+    <div class="section-title">Complete Exhibition Order Log</div>
     <table class="data-table">
       <thead>
         <tr>
@@ -420,13 +413,12 @@ export function exportStyledInventoryReport(products: Product[]) {
   const healthyStock = products.length - outOfStock - lowStock;
 
   let body = `
-    <!-- Top Branding Banner -->
-    <div class="header-banner">🧸 TOY STALL POS - LIVE INVENTORY VALUATION & MARGIN AUDIT</div>
-    <div class="sub-banner">Live Stock Valuation Generated on ${timestamp} • Real Buying Cost vs Selling Retail Price</div>
-    <br/>
+    <!-- Clean Professional Title -->
+    <div class="report-title">Toy Inventory Valuation & Margins Report</div>
+    <div class="report-meta">Generated on ${timestamp} • Real Buying Cost vs Selling Retail Price</div>
 
     <!-- Executive Inventory Valuation Cards -->
-    <div class="section-title">📊 Inventory Capital & Valuation Summary</div>
+    <div class="section-title">Inventory Capital & Valuation Summary</div>
     <table class="kpi-table">
       <tr>
         <td class="kpi-card" width="25%">
@@ -455,7 +447,7 @@ export function exportStyledInventoryReport(products: Product[]) {
     <br/>
 
     <!-- Inventory Data Table -->
-    <div class="section-title">📦 Complete Toy Catalog, Margins & Stock Levels</div>
+    <div class="section-title">Complete Toy Catalog, Margins & Stock Levels</div>
     <table class="data-table">
       <thead>
         <tr>
@@ -546,10 +538,9 @@ export function exportStyledOrdersReport(orders: Order[]) {
   });
 
   let body = `
-    <!-- Top Branding Banner -->
-    <div class="header-banner">🧸 TOY STALL POS - COMPLETE ORDERS & SALES AUDIT LEDGER</div>
-    <div class="sub-banner">Audit Report Generated on ${timestamp} • Full Order History & Verification Log</div>
-    <br/>
+    <!-- Clean Professional Title -->
+    <div class="report-title">Complete Orders & Sales Audit Ledger</div>
+    <div class="report-meta">Generated on ${timestamp} • Full Order History & Verification Log</div>
 
     <!-- Executive Orders Summary Cards -->
     <table class="kpi-table">
@@ -580,7 +571,7 @@ export function exportStyledOrdersReport(orders: Order[]) {
     <br/>
 
     <!-- Orders Data Table -->
-    <div class="section-title">📋 Complete Exhibition Transaction Log</div>
+    <div class="section-title">Complete Exhibition Transaction Log</div>
     <table class="data-table">
       <thead>
         <tr>

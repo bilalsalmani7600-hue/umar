@@ -1,10 +1,21 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSettings } from '@/context/SettingsContext';
-import { Wifi, WifiOff, Database } from 'lucide-react';
+import { subscribeToSyncQueue, getPendingQueue } from '@/lib/offlineSync';
+import { Wifi, WifiOff, Database, CloudLightning } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export const ConnectionStatusBadge: React.FC<{ onClick?: () => void }> = ({ onClick }) => {
   const { isOnline, isSupabaseConnected } = useSettings();
+  const [pendingCount, setPendingCount] = useState<number>(() => getPendingQueue().length);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToSyncQueue((count, syncing) => {
+      setPendingCount(count);
+      setIsSyncing(syncing);
+    });
+    return () => unsubscribe();
+  }, []);
 
   return (
     <button
@@ -13,14 +24,18 @@ export const ConnectionStatusBadge: React.FC<{ onClick?: () => void }> = ({ onCl
       className={cn(
         'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-all border',
         !isOnline
-          ? 'bg-red-500/10 text-red-400 border-red-500/30'
+          ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+          : pendingCount > 0
+          ? 'bg-sky-500/15 text-sky-400 border-sky-500/30'
           : isSupabaseConnected
           ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
           : 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20'
       )}
       title={
         !isOnline
-          ? 'Offline mode - Actions saved locally'
+          ? 'Offline mode - POS operating locally, will auto-sync when online'
+          : pendingCount > 0
+          ? `${pendingCount} offline items pending sync to cloud`
           : isSupabaseConnected
           ? 'Connected to Supabase Realtime'
           : 'Local Sync Mode (Click to configure Supabase)'
@@ -29,12 +44,28 @@ export const ConnectionStatusBadge: React.FC<{ onClick?: () => void }> = ({ onCl
       <span
         className={cn(
           'h-2 w-2 rounded-full animate-pulse',
-          !isOnline ? 'bg-red-500' : isSupabaseConnected ? 'bg-emerald-500' : 'bg-amber-400'
+          !isOnline
+            ? 'bg-amber-400'
+            : pendingCount > 0
+            ? 'bg-sky-400'
+            : isSupabaseConnected
+            ? 'bg-emerald-500'
+            : 'bg-amber-400'
         )}
       />
       {!isOnline ? (
         <span className="flex items-center gap-1">
           <WifiOff className="h-3 w-3" /> Offline
+          {pendingCount > 0 && (
+            <span className="ml-0.5 px-1 py-0.2 rounded bg-amber-500/30 text-[10px] font-mono">
+              ({pendingCount})
+            </span>
+          )}
+        </span>
+      ) : pendingCount > 0 ? (
+        <span className="flex items-center gap-1">
+          <CloudLightning className="h-3 w-3 animate-spin" />
+          <span>{isSyncing ? 'Syncing...' : `Sync (${pendingCount})`}</span>
         </span>
       ) : isSupabaseConnected ? (
         <span className="flex items-center gap-1">
@@ -48,4 +79,3 @@ export const ConnectionStatusBadge: React.FC<{ onClick?: () => void }> = ({ onCl
     </button>
   );
 };
-

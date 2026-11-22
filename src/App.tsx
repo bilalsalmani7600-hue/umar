@@ -6,6 +6,7 @@ import { SettingsProvider } from '@/context/SettingsContext';
 import { CartProvider } from '@/context/CartContext';
 import { Toaster } from '@/components/ui/toaster';
 import { MobileBottomNav } from '@/components/common/MobileBottomNav';
+import { OfflineNoticeBanner } from '@/components/common/OfflineNoticeBanner';
 
 // Pages
 import { POSPage } from '@/pages/POSPage';
@@ -31,6 +32,9 @@ export function App() {
         <AuthProvider>
           <CartProvider>
             <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+              {/* Global Offline Network Status Banner */}
+              <OfflineNoticeBanner />
+
               <Routes>
                 {/* Device 1: Mobile Phone & Fast Billing */}
                 <Route path="/" element={<POSPage />} />

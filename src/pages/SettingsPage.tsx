@@ -13,6 +13,12 @@ import {
   subscribeToInstallPrompt,
 } from '@/lib/pwa';
 import {
+  subscribeToSyncQueue,
+  processSyncQueue,
+  getPendingQueue,
+  clearSyncQueue,
+} from '@/lib/offlineSync';
+import {
   Settings,
   Database,
   RefreshCw,
@@ -26,6 +32,10 @@ import {
   Smartphone,
   Laptop,
   Info,
+  Wifi,
+  WifiOff,
+  CloudLightning,
+  Trash2,
 } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
@@ -38,6 +48,7 @@ export const SettingsPage: React.FC = () => {
     setAutoPrintReceipt,
     isSupabaseConnected,
     setSupabaseConnected,
+    isOnline,
   } = useSettings();
 
   const currentCreds = getSupabaseCredentials();
@@ -45,6 +56,41 @@ export const SettingsPage: React.FC = () => {
   const [supabaseKey, setSupabaseKey] = useState<string>(currentCreds.key || '');
   const [isTesting, setIsTesting] = useState<boolean>(false);
   const [isResetting, setIsResetting] = useState<boolean>(false);
+
+  // Offline Sync State
+  const [pendingSyncCount, setPendingSyncCount] = useState<number>(() => getPendingQueue().length);
+  const [isSyncingOffline, setIsSyncingOffline] = useState<boolean>(false);
+
+  useEffect(() => {
+    const unsub = subscribeToSyncQueue((count, syncing) => {
+      setPendingSyncCount(count);
+      setIsSyncingOffline(syncing);
+    });
+    return () => unsub();
+  }, []);
+
+  const handleManualSyncNow = async () => {
+    setIsSyncingOffline(true);
+    const { successCount, failedCount } = await processSyncQueue();
+    setIsSyncingOffline(false);
+    if (successCount === 0 && failedCount === 0 && pendingSyncCount === 0) {
+      toast({
+        title: 'All Data Synchronized',
+        description: 'No offline pending transactions found in queue.',
+        variant: 'default',
+      });
+    }
+  };
+
+  const handleClearSyncQueue = () => {
+    if (window.confirm('Clear all pending offline items from queue?')) {
+      clearSyncQueue();
+      toast({
+        title: 'Queue Cleared',
+        variant: 'default',
+      });
+    }
+  };
 
   // PWA Installation State
   const [isInstalled, setIsInstalled] = useState<boolean>(isAppInstalled());
@@ -421,6 +467,88 @@ export const SettingsPage: React.FC = () => {
                 <p className="text-muted-foreground">
                   Run the SQL scripts in <code className="bg-background px-1 py-0.5 rounded font-mono">supabase/schema.sql</code> and <code className="bg-background px-1 py-0.5 rounded font-mono">supabase/seed.sql</code> in your Supabase SQL Editor to initialize all tables, atomic RPC procedures, and seed toy catalog.
                 </p>
+              </div>
+            </div>
+          </div>
+
+          {/* OFFLINE POS ENGINE & RESILIENCE CARD */}
+          <div className="p-5 rounded-2xl border border-border bg-card space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-border gap-2">
+              <div className="flex items-center gap-2.5">
+                <WifiOff className="h-5 w-5 text-amber-500" />
+                <div>
+                  <h4 className="font-extrabold text-sm sm:text-base">
+                    Offline POS Engine & Background Sync
+                  </h4>
+                  <p className="text-xs text-muted-foreground">
+                    Continue full sales, token creation & inventory tracking even if exhibition Wi-Fi dies
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                {!isOnline ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                    <WifiOff className="h-3.5 w-3.5" /> Working Offline
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                    <Wifi className="h-3.5 w-3.5" /> Online & Synchronized
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="p-3.5 rounded-xl border border-border bg-muted/30 space-y-1.5">
+                <span className="text-xs font-bold text-foreground block">
+                  Offline Pending Sync Queue
+                </span>
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl font-black font-mono text-brand">
+                    {pendingSyncCount}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleManualSyncNow}
+                      disabled={isSyncingOffline || pendingSyncCount === 0 || !isOnline}
+                      className="font-bold text-xs flex items-center gap-1.5"
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 ${isSyncingOffline ? 'animate-spin' : ''}`} />
+                      <span>{isSyncingOffline ? 'Syncing...' : 'Sync Now'}</span>
+                    </Button>
+                    {pendingSyncCount > 0 && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={handleClearSyncQueue}
+                        className="text-muted-foreground hover:text-red-400 text-xs px-2"
+                        title="Clear Queue"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Orders, payments, and stock adjustments created while offline are held safely here until internet restores.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl border border-border bg-muted/30 space-y-1.5">
+                <span className="text-xs font-bold text-foreground block">
+                  Offline Cache Status
+                </span>
+                <p className="text-xs text-muted-foreground">
+                  Catalog, prices, and stock are automatically cached to your device. If cellular signal drops during a rush, you can keep taking cash or UPI payments without losing a single customer.
+                </p>
+                <div className="pt-1 flex items-center gap-2 text-[11px] font-bold text-emerald-400">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  <span>0ms Instant Local Storage Fallback Active</span>
+                </div>
               </div>
             </div>
           </div>

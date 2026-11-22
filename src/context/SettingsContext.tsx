@@ -12,6 +12,8 @@ interface SettingsContextType {
   isOnline: boolean;
   isSupabaseConnected: boolean;
   setSupabaseConnected: (val: boolean) => void;
+  isOfflineOnly: boolean;
+  setIsOfflineOnly: (val: boolean) => void;
   autoPrintReceipt: boolean;
   setAutoPrintReceipt: (val: boolean) => void;
 }
@@ -37,10 +39,26 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return localStorage.getItem('pos_auto_print') === 'true';
   });
 
+  const [isOfflineOnly, setIsOfflineOnlyState] = useState<boolean>(() => {
+    const saved = localStorage.getItem('pos_use_offline_only');
+    return saved !== null ? saved === 'true' : true; // Default to TRUE (100% offline project storage)
+  });
+
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [isSupabaseConnected, setSupabaseConnected] = useState<boolean>(() => {
+    if (isOfflineOnly) return false;
     return getSupabaseCredentials().isConfigured;
   });
+
+  const setIsOfflineOnly = (val: boolean) => {
+    setIsOfflineOnlyState(val);
+    localStorage.setItem('pos_use_offline_only', String(val));
+    if (val) {
+      setSupabaseConnected(false);
+    } else {
+      setSupabaseConnected(getSupabaseCredentials().isConfigured);
+    }
+  };
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -92,6 +110,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         isOnline,
         isSupabaseConnected,
         setSupabaseConnected,
+        isOfflineOnly,
+        setIsOfflineOnly,
         autoPrintReceipt,
         setAutoPrintReceipt,
       }}

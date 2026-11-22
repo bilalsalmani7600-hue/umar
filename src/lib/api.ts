@@ -8,7 +8,7 @@ import {
   TransitionOrderPayload,
   OrderStatus,
 } from './types';
-import { INITIAL_PRODUCTS, INITIAL_ORDERS } from './mockData';
+import { INITIAL_PRODUCTS, INITIAL_ORDERS, CLASSIC_12_PRODUCTS } from './mockData';
 import {
   withTimeout,
   addToSyncQueue,
@@ -765,6 +765,34 @@ export const api = {
     localStorage.setItem(STORAGE_KEYS.TOKEN_SEQ, '0');
     localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(INITIAL_PRODUCTS));
     syncChannel?.postMessage({ type: 'RESET_EXHIBITION' });
+  },
+
+  loadCatalogPreset(preset: '25_TOYS' | '12_TOYS'): Product[] {
+    const catalog = preset === '12_TOYS' ? CLASSIC_12_PRODUCTS : INITIAL_PRODUCTS;
+    saveLocalProducts(catalog);
+    syncChannel?.postMessage({ type: 'PRODUCTS_UPDATED', payload: catalog });
+    return catalog;
+  },
+
+  restoreBackup(backupJson: string): { productsCount: number; ordersCount: number } {
+    const parsed = JSON.parse(backupJson);
+    const products: Product[] = parsed.products || [];
+    const orders: Order[] = parsed.orders || [];
+
+    if (products.length > 0) {
+      saveLocalProducts(products);
+    }
+    if (orders.length > 0) {
+      saveLocalOrders(orders);
+    }
+
+    syncChannel?.postMessage({ type: 'PRODUCTS_UPDATED', payload: products });
+    syncChannel?.postMessage({ type: 'ORDERS_UPDATED', payload: orders });
+
+    return {
+      productsCount: products.length,
+      ordersCount: orders.length,
+    };
   },
 
   // REALTIME LISTENERS

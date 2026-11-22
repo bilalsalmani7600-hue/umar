@@ -8,7 +8,7 @@ import {
 import { WifiOff, RefreshCw, CheckCircle2, CloudLightning } from 'lucide-react';
 
 export const OfflineNoticeBanner: React.FC = () => {
-  const { isOnline } = useSettings();
+  const { isOnline, isOfflineOnly } = useSettings();
   const [pendingCount, setPendingCount] = useState<number>(() => getPendingQueue().length);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
@@ -26,8 +26,8 @@ export const OfflineNoticeBanner: React.FC = () => {
     setIsSyncing(false);
   };
 
-  // Only show when offline OR when there are pending items waiting to sync
-  if (isOnline && pendingCount === 0 && !isSyncing) {
+  // If in 100% Offline Project Mode, or if online with no queue, hide the banner
+  if (isOfflineOnly || (isOnline && pendingCount === 0 && !isSyncing)) {
     return null;
   }
 

@@ -36,6 +36,8 @@ import {
   WifiOff,
   CloudLightning,
   Trash2,
+  Package,
+  Upload,
 } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
@@ -49,6 +51,8 @@ export const SettingsPage: React.FC = () => {
     isSupabaseConnected,
     setSupabaseConnected,
     isOnline,
+    isOfflineOnly,
+    setIsOfflineOnly,
   } = useSettings();
 
   const currentCreds = getSupabaseCredentials();
@@ -413,87 +417,247 @@ export const SettingsPage: React.FC = () => {
             )}
           </div>
 
-          {/* SUPABASE CONNECTION CARD */}
-          <div className="p-5 rounded-2xl border border-border bg-card space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-border">
+          {/* DATABASE STORAGE MODE CARD */}
+          <div className="p-5 rounded-2xl border border-border bg-card space-y-4 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-border gap-2">
               <div className="flex items-center gap-2.5">
                 <Database className="h-5 w-5 text-brand" />
                 <div>
                   <h4 className="font-extrabold text-sm sm:text-base">
-                    Supabase Database & Realtime
+                    Database Storage Engine Mode
                   </h4>
                   <p className="text-xs text-muted-foreground">
-                    Connect both Mobile and Desktop devices through a shared cloud database
+                    Switch to 100% Offline Project Storage to avoid Supabase storage full or timeout errors
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5">
-                {isSupabaseConnected ? (
-                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                    <CheckCircle2 className="h-3.5 w-3.5" /> Connected
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                    Demo Mode (Local Sync)
-                  </span>
-                )}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOfflineOnly(true);
+                    toast({
+                      title: 'Switched to 100% Offline Project Storage',
+                      description: 'All data is stored directly in your project. No Supabase storage limits.',
+                      variant: 'success',
+                    });
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                    isOfflineOnly
+                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-sm'
+                      : 'bg-muted/50 text-muted-foreground border-border hover:text-foreground'
+                  }`}
+                >
+                  🟢 100% Offline Local Engine (No Quotas)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOfflineOnly(false);
+                    toast({
+                      title: 'Switched to Supabase Cloud Mode',
+                      description: 'Will attempt synchronization with Supabase cloud database.',
+                      variant: 'default',
+                    });
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                    !isOfflineOnly
+                      ? 'bg-brand/20 text-brand border-brand/40 shadow-sm'
+                      : 'bg-muted/50 text-muted-foreground border-border hover:text-foreground'
+                  }`}
+                >
+                  ☁️ Supabase Cloud
+                </button>
               </div>
             </div>
 
-            <form onSubmit={handleSaveCredentials} className="space-y-3.5">
-              <div>
-                <label className="text-xs font-bold text-muted-foreground block mb-1">
-                  Supabase Project URL:
-                </label>
-                <input
-                  type="url"
-                  required
-                  placeholder="https://xyzproject.supabase.co"
-                  value={supabaseUrl}
-                  onChange={(e) => setSupabaseUrl(e.target.value)}
-                  className="w-full h-10 px-3 rounded-xl border border-input bg-background font-mono text-xs focus:ring-2 focus:ring-brand focus:outline-none"
-                />
+            {isOfflineOnly ? (
+              <div className="p-4 rounded-xl bg-emerald-950/20 border border-emerald-500/30 text-xs space-y-2">
+                <div className="flex items-center gap-2 text-emerald-400 font-bold">
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  <span>100% Offline Project Storage is Active</span>
+                </div>
+                <p className="text-muted-foreground">
+                  Your project operates completely on high-speed browser local database storage. Supabase storage limits and network timeouts are completely bypassed. All sales, tokens, inventory deductions, cost tracking, and Excel reports work 100% offline with zero lag.
+                </p>
               </div>
+            ) : (
+              <div className="space-y-4 pt-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-muted-foreground">Supabase Cloud Connection:</span>
+                  <div>
+                    {isSupabaseConnected ? (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Connected
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                        Disconnected / Storage Quota Exceeded
+                      </span>
+                    )}
+                  </div>
+                </div>
 
-              <div>
-                <label className="text-xs font-bold text-muted-foreground block mb-1">
-                  Supabase Anon Public Key:
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                  value={supabaseKey}
-                  onChange={(e) => setSupabaseKey(e.target.value)}
-                  className="w-full h-10 px-3 rounded-xl border border-input bg-background font-mono text-xs focus:ring-2 focus:ring-brand focus:outline-none"
-                />
+                <form onSubmit={handleSaveCredentials} className="space-y-3.5">
+                  <div>
+                    <label className="text-xs font-bold text-muted-foreground block mb-1">
+                      Supabase Project URL:
+                    </label>
+                    <input
+                      type="url"
+                      required
+                      placeholder="https://xyzproject.supabase.co"
+                      value={supabaseUrl}
+                      onChange={(e) => setSupabaseUrl(e.target.value)}
+                      className="w-full h-10 px-3 rounded-xl border border-input bg-background font-mono text-xs focus:ring-2 focus:ring-brand focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-muted-foreground block mb-1">
+                      Supabase Anon Public Key:
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      value={supabaseKey}
+                      onChange={(e) => setSupabaseKey(e.target.value)}
+                      className="w-full h-10 px-3 rounded-xl border border-input bg-background font-mono text-xs focus:ring-2 focus:ring-brand focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="flex justify-between items-center pt-2">
+                    <span className="text-[11px] text-muted-foreground">
+                      Credentials are encrypted and saved in your browser storage.
+                    </span>
+                    <Button
+                      type="submit"
+                      disabled={isTesting}
+                      variant="default"
+                      className="font-bold flex items-center gap-2"
+                    >
+                      <RefreshCw className={isTesting ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
+                      <span>{isTesting ? 'Testing...' : 'Save & Connect'}</span>
+                    </Button>
+                  </div>
+                </form>
               </div>
+            )}
+          </div>
 
-              <div className="flex justify-between items-center pt-2">
-                <span className="text-[11px] text-muted-foreground">
-                  Credentials are encrypted and saved in your browser storage.
-                </span>
+          {/* CATALOG PRESETS & OFFLINE DATA RESTORE CARD */}
+          <div className="p-5 rounded-2xl border border-border bg-card space-y-4 shadow-sm">
+            <div className="flex items-center gap-2.5 pb-3 border-b border-border">
+              <Package className="h-5 w-5 text-brand" />
+              <div>
+                <h4 className="font-extrabold text-sm sm:text-base">
+                  Offline Catalog Presets & Data Restore
+                </h4>
+                <p className="text-xs text-muted-foreground">
+                  Load your official exhibition toy catalog or restore your previous backup directly into offline storage
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="p-4 rounded-xl border border-border bg-muted/30 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-sm text-foreground">📦 25 Official Toys Catalog</span>
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-brand/20 text-brand">25 Items</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Includes Dumpling (₹180), Camera (₹48), 2060 Grip (₹175), Flying boy (₹390), Slime, Cube, etc. with full real cost prices and selling prices.
+                </p>
                 <Button
-                  type="submit"
-                  disabled={isTesting}
-                  variant="default"
-                  className="font-bold flex items-center gap-2"
+                  type="button"
+                  size="sm"
+                  onClick={() => {
+                    if (window.confirm('Load the 25 Official Toys catalog into offline storage?')) {
+                      api.loadCatalogPreset('25_TOYS');
+                      toast({ title: '25 Toys Catalog Loaded!', variant: 'success' });
+                      setTimeout(() => window.location.reload(), 400);
+                    }
+                  }}
+                  className="w-full font-bold text-xs bg-brand hover:bg-brand/90 text-white mt-1"
                 >
-                  <RefreshCw className={isTesting ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
-                  <span>{isTesting ? 'Testing...' : 'Save & Connect'}</span>
+                  Load 25 Toys Catalog (Recommended)
                 </Button>
               </div>
-            </form>
 
-            {/* Quick SQL Schema Notice */}
-            <div className="p-3.5 rounded-xl bg-muted/50 border border-border flex items-start gap-3">
-              <Terminal className="h-4 w-4 text-brand shrink-0 mt-0.5" />
-              <div className="text-xs space-y-1">
-                <p className="font-bold text-foreground">Supabase SQL Schema Ready</p>
-                <p className="text-muted-foreground">
-                  Run the SQL scripts in <code className="bg-background px-1 py-0.5 rounded font-mono">supabase/schema.sql</code> and <code className="bg-background px-1 py-0.5 rounded font-mono">supabase/seed.sql</code> in your Supabase SQL Editor to initialize all tables, atomic RPC procedures, and seed toy catalog.
+              <div className="p-4 rounded-xl border border-border bg-muted/30 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-sm text-foreground">🧸 12 Classic Wholesale Toys</span>
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-muted text-muted-foreground">12 Items</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Original starting 12 exhibition products: Spiderman Mask (₹48), Mini Basketball (₹75), Kataana (₹55), Bubble Gun (₹195), etc.
                 </p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    if (window.confirm('Load the 12 Classic Wholesale Toys into offline storage?')) {
+                      api.loadCatalogPreset('12_TOYS');
+                      toast({ title: '12 Classic Toys Loaded!', variant: 'success' });
+                      setTimeout(() => window.location.reload(), 400);
+                    }
+                  }}
+                  className="w-full font-bold text-xs mt-1"
+                >
+                  Load 12 Classic Toys
+                </Button>
+              </div>
+            </div>
+
+            {/* File Restore input */}
+            <div className="p-3.5 rounded-xl border border-border bg-muted/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <span className="text-xs font-bold text-foreground block">
+                  Restore Data from JSON Backup File
+                </span>
+                <span className="text-[11px] text-muted-foreground">
+                  Upload any previously exported backup file to restore products and orders offline
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="file"
+                  id="backup-file-input"
+                  accept=".json"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      try {
+                        const content = event.target?.result as string;
+                        const res = api.restoreBackup(content);
+                        toast({
+                          title: 'Data Restored Successfully!',
+                          description: `Restored ${res.productsCount} products and ${res.ordersCount} orders.`,
+                          variant: 'success',
+                        });
+                        setTimeout(() => window.location.reload(), 500);
+                      } catch (err: any) {
+                        toast({ title: 'Invalid backup file', description: err.message, variant: 'destructive' });
+                      }
+                    };
+                    reader.readAsText(file);
+                  }}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => document.getElementById('backup-file-input')?.click()}
+                  className="font-bold text-xs"
+                >
+                  <Upload className="h-4 w-4 mr-1.5" /> Import JSON Backup
+                </Button>
               </div>
             </div>
           </div>

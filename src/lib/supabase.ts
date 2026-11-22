@@ -5,6 +5,12 @@ const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_ke7yUTS2EjUtgFM6f_NvNw_GrSZduf
 
 // Retrieve credentials from env, localStorage or production exhibition defaults
 export function getSupabaseCredentials() {
+  // If user explicitly chose Standalone Offline Mode, disable Supabase client
+  const isOfflineOnly = typeof window !== 'undefined' ? localStorage.getItem('pos_use_offline_only') === 'true' : false;
+  if (isOfflineOnly) {
+    return { url: '', key: '', isConfigured: false, isOfflineOnly: true };
+  }
+
   const envUrl = import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
   const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
 
@@ -15,7 +21,7 @@ export function getSupabaseCredentials() {
   const key = storedKey || envKey;
 
   const isConfigured = Boolean(url && key && url.startsWith('http') && !url.includes('placeholder'));
-  return { url, key, isConfigured };
+  return { url, key, isConfigured, isOfflineOnly: false };
 }
 
 let supabaseInstance: SupabaseClient | null = null;

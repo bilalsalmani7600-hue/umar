@@ -92,6 +92,33 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
+  const handleHardRefreshData = async () => {
+    const confirmed = window.confirm(
+      '🔄 Clear local device cache and reload fresh product catalog? Old cached test data will be reset.'
+    );
+    if (!confirmed) return;
+
+    localStorage.removeItem('pos_local_products_v4');
+    localStorage.removeItem('pos_local_orders_v4');
+    localStorage.removeItem('pos_local_token_sequence_v4');
+    localStorage.removeItem('pos_offline_sync_queue_v1');
+
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    }
+
+    toast({
+      title: 'Cache Cleared!',
+      description: 'Reloading fresh catalog and orders...',
+      variant: 'success',
+    });
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 400);
+  };
+
   // PWA Installation State
   const [isInstalled, setIsInstalled] = useState<boolean>(isAppInstalled());
   const [canPrompt, setCanPrompt] = useState<boolean>(canPromptInstall());
@@ -642,6 +669,26 @@ export const SettingsPage: React.FC = () => {
                 </div>
                 <Button onClick={handleBackupData} size="sm" variant="outline" className="font-bold">
                   <Download className="h-4 w-4 mr-1" /> Backup
+                </Button>
+              </div>
+
+              {/* Reset Old Local Cache */}
+              <div className="p-3.5 rounded-xl border border-border bg-muted/30 flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-bold text-foreground block">
+                    Clear Local Cache & Reset Old Data
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">
+                    Removes old device cache and refreshes catalog with Cost Price & Selling Price
+                  </span>
+                </div>
+                <Button
+                  onClick={handleHardRefreshData}
+                  size="sm"
+                  variant="outline"
+                  className="font-bold text-amber-400 border-amber-500/30 hover:bg-amber-500/10"
+                >
+                  <RefreshCw className="h-4 w-4 mr-1" /> Reset Old Cache
                 </Button>
               </div>
             </div>
